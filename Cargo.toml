@@ -1,0 +1,26 @@
+[package]
+name = "weave"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.95"
+axum = { version = "0.8.1", features = ["macros"] }
+axum-extra = { version = "0.10.1", features = ["cookie-signed"] }
+jiff = { version = "0.2", features = ["serde"] }
+jsonwebtoken = "9.3.1"
+markdown = "1.0.0-alpha.21"
+maud = { git = "https://github.com/lambda-fairy/maud", features = ["axum"] }
+nucleo = { version = "0.5.0", default-features = false }
+regex = "1.11.1"
+regex-split = "0.1.0"
+ring = "0.17.14"
+serde = { version = "1.0.217", features = ["serde_derive"] }
+serde_json = "1.0.135"
+thiserror = "2.0.10"
+tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread"] }
+tracing = "0.1.41"
+tracing-subscriber = "0.3.19"
+
+[dev-dependencies]
+rand = "0.8.5"
