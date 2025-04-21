@@ -121,15 +121,15 @@ async fn login() -> Markup {
         (DOCTYPE)
         html lang="en" {
             head { (head()) }
-            body class="flex h-screen items-center justify-center" {
-                div class="flex flex-col items-center justify-center bg-white p-8" {
+            body class="flex h-screen items-center justify-center bg-white dark:bg-gray-900 text-black dark:text-white" {
+                div class="flex flex-col items-center justify-center p-8" {
                     form action="/login" method="post" {
                         input
                             type="password"
                             name="password"
                             id="password"
                             placeholder="Password"
-                            class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            class="w-full p-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {}
 
                         button
@@ -192,9 +192,9 @@ async fn index(Authenticated(authenticated): Authenticated) -> Markup {
         (DOCTYPE)
         html lang="en" {
             head { (head()) }
-            body class="flex h-screen" {
-                div class="w-80 bg-white border-r border-gray-200 flex flex-col" {
-                    div class="p-4 border-b border-gray-200" {
+            body class="flex h-screen bg-white dark:bg-gray-800 text-black dark:text-white" {
+                div class="w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col" {
+                    div class="p-4 border-b border-gray-200 dark:border-gray-700" {
                         div class="flex" {
                             div class="flex flex-col flex-auto" {
                                 span class="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-green-600" {"weave notes"}
@@ -208,11 +208,11 @@ async fn index(Authenticated(authenticated): Authenticated) -> Markup {
                         }
                     }
 
-                    div class="p-4 border-b border-gray-200" {
+                    div class="p-4 border-b border-gray-200 dark:border-gray-700" {
                         input type="search"
                             name="query"
                             placeholder="Search notes..."
-                            class="w-full p-2 rounded bg-gray-100 text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            class="w-full p-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             hx-post="/f/search"
                             hx-trigger="input changed delay:300ms, keyup[key=='Enter']"
                             hx-target="#search-list"
@@ -240,7 +240,7 @@ async fn note(
         if !authenticated && !note.has("public") {
             html! {
                 div class="h-screen flex items-center justify-center" {
-                    div class="flex flex-col items-center justify-center bg-white p-8" {
+                    div class="flex flex-col items-center justify-center p-8" {
                         h2 class="text-xl font-bold" { "access denied" }
                     }
                 }
@@ -249,8 +249,8 @@ async fn note(
             let markdown = note.body.clone();
 
             html! {
-                div class="p-4 border-b border-gray-200 bg-white" {
-                    h2 class="text-xl font-bold" { (note.title) }
+                div class="p-4 border-b border-gray-200 dark:border-gray-700" {
+                    h2 class="text-xl font-bold dark:text-white" { (note.title) }
                 }
 
                 div class="flex-grow p-4 overflow-x-auto" {
@@ -298,11 +298,11 @@ async fn search(
     html! {
         @for note in notes {
             div
-                class="p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-100"
+                class="p-4 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
                 hx-get={ "/f/" (note.filename_stem) }
                 hx-target="#note-content" {
-                h3 class="text-md font-semibold" { (note.title) }
-                p class="text-sm text-gray-600 truncate" { (note.snippet()) }
+                h3 class="text-md font-semibold text-gray-900 dark:text-white" { (note.title) }
+                p class="text-sm text-gray-600 dark:text-gray-300 truncate" { (note.snippet()) }
             }
         }
     }

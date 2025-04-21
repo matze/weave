@@ -79,20 +79,20 @@ fn node_to_html(node: &markdown::mdast::Node) -> Markup {
         markdown::mdast::Node::Yaml(_) => todo!(),
         markdown::mdast::Node::Break(_) => todo!(),
         markdown::mdast::Node::InlineCode(code) => html! {
-            code class="bg-gray-100 p-1 rounded font-mono" {
+            code class="bg-gray-100 dark:bg-gray-900 p-1 rounded font-mono" {
                 (code.value)
             }
         },
         markdown::mdast::Node::InlineMath(_) => todo!(),
         markdown::mdast::Node::Delete(delete) => html! {
-            del class="text-gray-500 line-through" {
+            del class="line-through" {
                 @for node in &delete.children {
                     (node_to_html(node))
                 }
             }
         },
         markdown::mdast::Node::Emphasis(emphasis) => html! {
-            em class="italic text-gray-700" {
+            em class="italic" {
                 @for node in &emphasis.children {
                     (node_to_html(&node))
                 }
@@ -135,7 +135,7 @@ fn node_to_html(node: &markdown::mdast::Node) -> Markup {
         }
         markdown::mdast::Node::LinkReference(_) => todo!(),
         markdown::mdast::Node::Strong(strong) => html! {
-            strong class="font-bold text-gray-800" {
+            strong class="font-bold" {
                 @for node in &strong.children {
                     (node_to_html(&node))
                 }
@@ -145,7 +145,7 @@ fn node_to_html(node: &markdown::mdast::Node) -> Markup {
             (text_to_html(text))
         },
         markdown::mdast::Node::Code(code) => html! {
-            pre class="bg-gray-100 p-4 rounded my-4 overflow-x-auto font-mono" {
+            pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded my-4 overflow-x-auto font-mono" {
                 (code.value)
             }
         },
