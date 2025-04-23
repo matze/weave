@@ -7,34 +7,14 @@ use axum::response::{IntoResponse, Redirect};
 use axum::routing::{get, post};
 use axum_extra::extract::SignedCookieJar;
 use axum_extra::extract::cookie::{Cookie, Key};
-use jsonwebtoken as jwt;
 use maud::{DOCTYPE, Markup, html};
-use ring::signature::{Ed25519KeyPair, KeyPair};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::convert::Infallible;
 use std::sync::Arc;
 
+mod jwt;
 mod md;
 mod zk;
-
-const JWT_SUB: &str = "user";
-const JWT_ISS: &str = "weave";
-
-#[derive(Debug, Deserialize, Serialize)]
-struct Claims {
-    sub: String,
-    iss: String,
-    exp: u64,
-}
-
-struct JwtInner {
-    password: String,
-    encoding_key: jwt::EncodingKey,
-    decoding_key: jwt::DecodingKey,
-    header: jwt::Header,
-    validation: jwt::Validation,
-    claims: Claims,
-}
 
 #[derive(Debug)]
 struct Authenticated(bool);
@@ -43,31 +23,21 @@ impl<S> FromRequestParts<S> for Authenticated
 where
     S: Send + Sync,
     Key: FromRef<S>,
-    Jwt: FromRef<S>,
+    Issuer: FromRef<S>,
 {
     type Rejection = Infallible;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let jar = SignedCookieJar::<Key>::from_request_parts(parts, state).await;
-        let jwt = Jwt::from_ref(state);
+        let issuer = Issuer::from_ref(state);
 
         let authenticated = jar
             .map(|jar| {
-                jar.get("jwt").and_then(|cookie| {
-                    jwt::decode::<Claims>(
-                        cookie.value_trimmed(),
-                        &jwt.decoding_key,
-                        &jwt.validation,
-                    )
-                    .ok()
-                })
+                jar.get("jwt")
+                    .and_then(|cookie| Some(Authenticated(issuer.is_valid(cookie.value_trimmed()))))
             })
             .ok()
             .flatten()
-            .and_then(|data| {
-                (data.claims.sub == JWT_SUB && data.claims.iss == JWT_ISS)
-                    .then_some(Authenticated(true))
-            })
             .unwrap_or(Authenticated(false));
 
         Ok(authenticated)
@@ -76,16 +46,18 @@ where
 
 type Notebook = Arc<zk::Notebook>;
 
-type Jwt = Arc<JwtInner>;
+type Issuer = Arc<jwt::Issuer>;
 
 #[derive(Clone)]
 struct AppState {
     /// The static zk [`Notebook`].
     notebook: Notebook,
-    /// All things required to issue or validate a token.
-    jwt: Jwt,
+    /// JWT issuer
+    issuer: Issuer,
     /// Key for signing cookies.
     key: Key,
+    /// Login password
+    password: String,
 }
 
 impl FromRef<AppState> for Notebook {
@@ -94,9 +66,9 @@ impl FromRef<AppState> for Notebook {
     }
 }
 
-impl FromRef<AppState> for Jwt {
+impl FromRef<AppState> for Issuer {
     fn from_ref(state: &AppState) -> Self {
-        state.jwt.clone()
+        state.issuer.clone()
     }
 }
 
@@ -150,13 +122,14 @@ struct Login {
 
 async fn do_login(
     jar: SignedCookieJar,
-    State(jwt): State<Jwt>,
+    State(state): State<AppState>,
+    State(issuer): State<Issuer>,
     Form(login): Form<Login>,
 ) -> (SignedCookieJar, Redirect) {
     // TODO: use argon2
-    if login.password == jwt.password {
+    if login.password == state.password {
         tracing::info!("successful login");
-        let token = jsonwebtoken::encode(&jwt.header, &jwt.claims, &jwt.encoding_key).unwrap();
+        let token = issuer.new_token();
         let cookie = Cookie::build(("jwt", token)).build();
         (jar.add(cookie), Redirect::to("/"))
     } else {
@@ -322,34 +295,6 @@ async fn htmx_js() -> impl IntoResponse {
     )
 }
 
-impl JwtInner {
-    fn new(password: String) -> Result<Self> {
-        let key_pair = Ed25519KeyPair::generate_pkcs8(&ring::rand::SystemRandom::new())?;
-        let encoding_key = jwt::EncodingKey::from_ed_der(key_pair.as_ref());
-
-        let key_pair = Ed25519KeyPair::from_pkcs8(key_pair.as_ref())?;
-        let decoding_key = jwt::DecodingKey::from_ed_der(key_pair.public_key().as_ref());
-
-        let claims = Claims {
-            sub: "user".into(),
-            iss: "weave".into(),
-            exp: jwt::get_current_timestamp() + 60 * 24 * 30,
-        };
-
-        let header = jwt::Header::new(jwt::Algorithm::EdDSA);
-        let validation = jwt::Validation::new(jwt::Algorithm::EdDSA);
-
-        Ok(Self {
-            password,
-            encoding_key,
-            decoding_key,
-            header,
-            validation,
-            claims,
-        })
-    }
-}
-
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
@@ -361,13 +306,14 @@ async fn main() -> Result<()> {
     }
 
     let notebook = zk::Notebook::load()?;
-    let jwt = JwtInner::new(password)?;
+    let issuer = jwt::Issuer::new()?;
     let key = Key::generate();
 
     let state = AppState {
         notebook: Arc::new(notebook),
-        jwt: Arc::new(jwt),
+        issuer: Arc::new(issuer),
         key,
+        password,
     };
 
     let app = Router::new()
