@@ -7,16 +7,21 @@ use axum::response::{IntoResponse, Redirect};
 use axum::routing::{get, post};
 use axum_extra::extract::SignedCookieJar;
 use axum_extra::extract::cookie::{Cookie, Key};
+use futures_concurrency::future::Join;
 use maud::{DOCTYPE, Markup, html};
+use notify::{
+    EventKind, Watcher,
+    event::{AccessKind, AccessMode},
+};
 use serde::Deserialize;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, mpsc};
 
 mod extract;
 mod jwt;
 mod md;
 mod zk;
 
-type Notebook = Arc<zk::Notebook>;
+type Notebook = Arc<Mutex<zk::Notebook>>;
 
 pub(crate) type Issuer = Arc<jwt::Issuer>;
 
@@ -181,34 +186,32 @@ async fn note(
     Authenticated(authenticated): Authenticated,
     Path(stem): Path<String>,
 ) -> Markup {
-    if let Some(note) = notebook.note(&stem) {
-        if !authenticated && !note.has("public") {
-            html! {
-                div class="h-screen flex items-center justify-center" {
-                    div class="flex flex-col items-center justify-center p-8" {
-                        h2 class="text-xl font-bold" { "access denied" }
-                    }
-                }
-            }
-        } else {
-            let markdown = note.body.clone();
+    let Some(note) = notebook.lock().unwrap().note(&stem) else {
+        return html! {};
+    };
 
-            html! {
-                div class="p-4 border-b border-gray-200 dark:border-gray-700" {
-                    h2 class="text-xl font-bold dark:text-white" { (note.title) }
-                }
-
-                div class="flex-grow p-4 overflow-x-auto" {
-                    div class="prose max-w-none" {
-                        (tokio::task::spawn_blocking(move || md::markdown_to_html(&markdown))
-                            .await
-                            .expect("join working"))
-                    }
+    if !authenticated && !note.has("public") {
+        html! {
+            div class="h-screen flex items-center justify-center" {
+                div class="flex flex-col items-center justify-center p-8" {
+                    h2 class="text-xl font-bold" { "access denied" }
                 }
             }
         }
     } else {
-        html! {}
+        html! {
+            div class="p-4 border-b border-gray-200 dark:border-gray-700" {
+                h2 class="text-xl font-bold dark:text-white" { (note.title) }
+            }
+
+            div class="flex-grow p-4 overflow-x-auto" {
+                div class="prose max-w-none" {
+                    (tokio::task::spawn_blocking(move || md::markdown_to_html(&note.body))
+                        .await
+                        .expect("join working"))
+                }
+            }
+        }
     }
 }
 
@@ -226,6 +229,7 @@ async fn search(
 ) -> Markup {
     // Oh no, blocking ...
     let query = search.query.trim();
+    let notebook = notebook.lock().unwrap();
 
     let notes = if let Some(tag) = query.strip_prefix('#') {
         if !authenticated {
@@ -267,6 +271,45 @@ async fn htmx_js() -> impl IntoResponse {
     )
 }
 
+async fn watch(notebook: Notebook) -> Result<()> {
+    // TODO: do better.
+    let path = std::path::PathBuf::from(std::env::var("ZK_NOTEBOOK_DIR")?);
+
+    tokio::task::spawn_blocking(move || {
+        let (tx, rx) = mpsc::channel();
+
+        let mut watcher = notify::recommended_watcher(move |result| {
+            if let Ok(notify::Event { kind, paths, .. }) = result {
+                if matches!(
+                    kind,
+                    EventKind::Access(AccessKind::Close(AccessMode::Write))
+                ) {
+                    for path in paths.into_iter() {
+                        if path.extension().map(|ext| ext == "md").unwrap_or(false) {
+                            tx.send(path).unwrap();
+                        }
+                    }
+                }
+            }
+        })?;
+
+        watcher.watch(&path, notify::RecursiveMode::NonRecursive)?;
+
+        while let Ok(path) = rx.recv() {
+            if let Some(stem) = path.file_stem().and_then(|name| name.to_str()) {
+                // TODO: we are locking the entire notebook while loading the new note. Perhaps
+                // decouple that.
+                notebook.lock().unwrap().reload(stem).unwrap();
+            }
+        }
+
+        Ok::<_, anyhow::Error>(())
+    })
+    .await??;
+
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
@@ -280,9 +323,10 @@ async fn main() -> Result<()> {
     let notebook = zk::Notebook::load()?;
     let issuer = jwt::Issuer::new()?;
     let key = Key::generate();
+    let notebook = Arc::new(Mutex::new(notebook));
 
     let state = AppState {
-        notebook: Arc::new(notebook),
+        notebook: notebook.clone(),
         issuer: Arc::new(issuer),
         key,
         password,
@@ -299,7 +343,7 @@ async fn main() -> Result<()> {
 
     tracing::info!("serving on localhost:8000");
     let listener = tokio::net::TcpListener::bind("localhost:8000").await?;
-    axum::serve(listener, app).await?;
+    let _ = (watch(notebook), axum::serve(listener, app)).join().await;
 
     Ok(())
 }

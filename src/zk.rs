@@ -2,7 +2,7 @@
 
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 use std::process::{Command, Stdio};
 
 #[derive(thiserror::Error, Debug)]
@@ -18,7 +18,7 @@ pub enum Error {
 }
 
 /// A zk note.
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 pub struct Note {
     pub filename: String,
     #[serde(rename = "filenameStem")]
@@ -70,9 +70,41 @@ impl Notebook {
         Ok(Self { notes, tags })
     }
 
+    /// Reload the note with the given stem.
+    pub fn reload(&mut self, stem: &str) -> Result<(), Error> {
+        println!("reloading {stem}");
+        let mut child = Command::new("zk")
+            .args(["list", "--format", "jsonl", stem])
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
+            .spawn()?;
+
+        let mut stdout = child.stdout.take().ok_or(Error::Pipe)?;
+        let mut line = String::new();
+        let _ = stdout.read_to_string(&mut line)?;
+        let note: Note = serde_json::from_str(&line)?;
+
+        child.wait()?;
+
+        if let Some(index) = self
+            .notes
+            .iter()
+            .position(|item| item.filename_stem == note.filename_stem)
+        {
+            self.notes.remove(index);
+        }
+
+        self.notes.push(note);
+
+        Ok(())
+    }
+
     /// Return note with the given filename stem or `None`.
-    pub fn note(&self, stem: &str) -> Option<&Note> {
-        self.notes.iter().find(|note| note.filename_stem == stem)
+    pub fn note(&self, stem: &str) -> Option<Note> {
+        self.notes
+            .iter()
+            .find(|note| note.filename_stem == stem)
+            .cloned()
     }
 
     /// Return notes for given tag.
