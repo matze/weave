@@ -125,7 +125,8 @@ fn node_to_html(node: &markdown::mdast::Node) -> Markup {
                 html! {
                     a href="#" class=(css)
                     hx-get={ "/f/" (link.url) }
-                    hx-target="#note-content" { (text) }
+                    hx-target="#note-content"
+                    hx-push-url="true" { (text) }
                 }
             } else {
                 html! {
