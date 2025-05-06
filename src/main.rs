@@ -59,6 +59,7 @@ fn head() -> Markup {
     html! {
         head {
             meta charset="utf-8";
+            meta name="viewport" content="width=device-width, initial-scale=1.0";
             link rel="stylesheet" type="text/css" href="app.css";
             title {"weave notes"};
         }
@@ -142,8 +143,8 @@ async fn index(Authenticated(authenticated): Authenticated) -> Markup {
         (DOCTYPE)
         html lang="en" {
             head { (head()) }
-            body class="flex h-screen bg-white dark:bg-gray-800 text-black dark:text-white" {
-                div class="w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col" {
+            body class="flex flex-col md:flex-row h-screen bg-white dark:bg-gray-800 text-black dark:text-white" {
+                div class="w-full md:w-80 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-y-auto flex-shrink-0" {
                     div class="p-4 border-b border-gray-200 dark:border-gray-700" {
                         div class="flex" {
                             div class="flex flex-col flex-auto" {
@@ -166,14 +167,16 @@ async fn index(Authenticated(authenticated): Authenticated) -> Markup {
                             hx-post="/f/search"
                             hx-trigger="input changed delay:300ms, keyup[key=='Enter']"
                             hx-target="#search-list"
+                            hx-swap="innerHTML"
                             {}
                     }
 
-                    div class="flex-grow overflow-y-auto" id="search-list" {}
+                    div class="flex-grow overflow-y-auto max-h-xs md:max-h-none" id="search-list" {}
                 }
 
-                div class="flex-grow flex flex-col overflow-y-auto" id="note-content" {}
+                div class="flex flex-grow flex-col overflow-y-auto basis-1/2" id="note-content" {}
 
+                // HTMX script
                 script src="/htmx.2.0.4.min.js" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" {}
             }
         }
@@ -204,7 +207,7 @@ async fn note(
                 h2 class="text-xl font-bold dark:text-white" { (note.title) }
             }
 
-            div class="flex-grow p-4 overflow-x-auto" {
+            div class="flex-grow p-4 overflow-y-auto" {
                 div class="prose max-w-none" {
                     (tokio::task::spawn_blocking(move || md::markdown_to_html(&note.body))
                         .await
