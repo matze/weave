@@ -72,7 +72,6 @@ impl Notebook {
 
     /// Reload the note with the given stem.
     pub fn reload(&mut self, stem: &str) -> Result<(), Error> {
-        println!("reloading {stem}");
         let mut child = Command::new("zk")
             .args(["list", "--format", "jsonl", stem])
             .stdout(Stdio::piped())
