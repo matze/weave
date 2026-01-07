@@ -25,7 +25,14 @@ fn text_to_html(node: &markdown::mdast::Text) -> Markup {
             @match part {
                 Part::Text(text) => { (text) },
                 Part::Tag(tag) => {
-                    a href={ "/tags/" (tag) } {
+                    a href="#"
+                        class="text-sky-600 hover:underline"
+                        hx-post="/f/search"
+                        hx-vals={ "{\"query\": \"#" (tag) "\"}" }
+                        hx-target="#search-list"
+                        hx-on-htmx-after-request="document.querySelector('input[name=query]').value = this.getAttribute('data-tag')"
+                        data-tag={ "#" (tag) }
+                    {
                         { "#" (tag) }
                     }
                 },
