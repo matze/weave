@@ -1,1 +1,15 @@
 @import "tailwindcss";
+
+@media (max-width: 767px) {
+  #sidebar.mobile-hidden {
+    display: none;
+  }
+
+  #note-content {
+    display: none;
+  }
+
+  #note-content.mobile-visible {
+    display: flex;
+  }
+}

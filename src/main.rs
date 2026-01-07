@@ -62,6 +62,18 @@ fn head() -> Markup {
             meta name="viewport" content="width=device-width, initial-scale=1.0";
             link rel="stylesheet" type="text/css" href="app.css";
             title {"weave notes"};
+            script {
+                (maud::PreEscaped(r#"
+                function showNote() {
+                    document.getElementById('sidebar').classList.add('mobile-hidden');
+                    document.getElementById('note-content').classList.add('mobile-visible');
+                }
+                function showSidebar() {
+                    document.getElementById('sidebar').classList.remove('mobile-hidden');
+                    document.getElementById('note-content').classList.remove('mobile-visible');
+                }
+                "#))
+            }
         }
     }
 }
@@ -132,14 +144,23 @@ fn unlocked_icon() -> Markup {
     }
 }
 
+fn back_icon() -> Markup {
+    html! {
+        svg class="w-6 h-6" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" {
+            path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" {}
+        }
+    }
+}
+
 /// Render a list of notes for the sidebar.
 fn render_note_list<'a>(notes: impl IntoIterator<Item = &'a zk::Note>) -> Markup {
     html! {
         @for note in notes {
             div
-                class="p-4 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                class="p-4 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600"
                 hx-get={ "/f/" (note.filename_stem) }
-                hx-target="#note-content" {
+                hx-target="#note-content"
+                onclick="showNote()" {
                 h3 class="text-md font-semibold text-gray-900 dark:text-white" { (note.title) }
                 p class="text-sm text-gray-600 dark:text-gray-300 truncate" { (note.snippet()) }
             }
@@ -167,7 +188,7 @@ async fn index(
         html lang="en" {
             head { (head()) }
             body class="flex flex-col md:flex-row h-screen bg-white dark:bg-gray-800 text-black dark:text-white" {
-                div class="w-full md:w-80 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-y-auto flex-shrink-0" {
+                div id="sidebar" class="w-full md:w-80 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-y-auto flex-shrink-0 h-screen md:h-auto" {
                     div class="p-4 border-b border-gray-200 dark:border-gray-700" {
                         div class="flex" {
                             div class="flex flex-col flex-auto" {
@@ -199,7 +220,7 @@ async fn index(
                     }
                 }
 
-                div class="flex flex-grow flex-col overflow-y-auto basis-1/2" id="note-content" {}
+                div class="flex flex-grow flex-col overflow-y-auto h-screen md:h-auto md:basis-1/2" id="note-content" {}
 
                 // HTMX script
                 script src="/htmx.2.0.4.min.js" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" {}
@@ -229,11 +250,19 @@ async fn note(
     } else {
         html! {
             div class="p-4 border-b border-gray-200 dark:border-gray-700" {
-                h2 class="text-xl font-bold dark:text-white" { (note.title) }
+                div class="flex items-center gap-3" {
+                    button
+                        class="md:hidden p-1 -ml-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onclick="showSidebar()"
+                        aria-label="Back to notes" {
+                        (back_icon())
+                    }
+                    h2 class="text-xl font-bold dark:text-white" { (note.title) }
+                }
             }
 
             div class="flex-grow p-4 overflow-y-auto" {
-                div class="prose max-w-none" {
+                div class="prose max-w-none dark:prose-invert" {
                     (tokio::task::spawn_blocking(move || md::markdown_to_html(&note.body))
                         .await
                         .expect("join working"))
