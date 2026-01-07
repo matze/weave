@@ -106,6 +106,14 @@ impl Notebook {
             .cloned()
     }
 
+    /// Return all notes, optionally filtered by a required tag.
+    pub fn all_notes(&self, with_tag: Option<&str>) -> Vec<&Note> {
+        self.notes
+            .iter()
+            .filter(|note| with_tag.map(|tag| note.has(tag)).unwrap_or(true))
+            .collect()
+    }
+
     /// Return notes for given tag.
     pub fn search_tag(&self, tag: &str) -> Vec<&Note> {
         let Some(filenames) = self.tags.get(tag) else {

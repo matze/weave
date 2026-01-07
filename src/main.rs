@@ -132,12 +132,35 @@ fn unlocked_icon() -> Markup {
     }
 }
 
-async fn index(Authenticated(authenticated): Authenticated) -> Markup {
+/// Render a list of notes for the sidebar.
+fn render_note_list<'a>(notes: impl IntoIterator<Item = &'a zk::Note>) -> Markup {
+    html! {
+        @for note in notes {
+            div
+                class="p-4 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                hx-get={ "/f/" (note.filename_stem) }
+                hx-target="#note-content" {
+                h3 class="text-md font-semibold text-gray-900 dark:text-white" { (note.title) }
+                p class="text-sm text-gray-600 dark:text-gray-300 truncate" { (note.snippet()) }
+            }
+        }
+    }
+}
+
+async fn index(
+    State(notebook): State<Notebook>,
+    Authenticated(authenticated): Authenticated,
+) -> Markup {
     let icon = if authenticated {
         unlocked_icon()
     } else {
         locked_icon()
     };
+
+    // Hold the lock during rendering to avoid cloning notes
+    let notebook = notebook.lock().unwrap();
+    let tag_filter = (!authenticated).then_some("public");
+    let notes = notebook.all_notes(tag_filter);
 
     html! {
         (DOCTYPE)
@@ -162,7 +185,7 @@ async fn index(Authenticated(authenticated): Authenticated) -> Markup {
                     div class="p-4 border-b border-gray-200 dark:border-gray-700" {
                         input type="search"
                             name="query"
-                            placeholder="Search notes..."
+                            placeholder="Filter notes..."
                             class="w-full p-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                             hx-post="/f/search"
                             hx-trigger="input changed delay:300ms, keyup[key=='Enter']"
@@ -171,7 +194,9 @@ async fn index(Authenticated(authenticated): Authenticated) -> Markup {
                             {}
                     }
 
-                    div class="flex-grow overflow-y-auto max-h-xs md:max-h-none" id="search-list" {}
+                    div class="flex-grow overflow-y-auto max-h-xs md:max-h-none" id="search-list" {
+                        (render_note_list(notes))
+                    }
                 }
 
                 div class="flex flex-grow flex-col overflow-y-auto basis-1/2" id="note-content" {}
@@ -223,41 +248,33 @@ struct Search {
     query: String,
 }
 
-/// Return fragment for the sidebar search results.
+/// Return fragment for the sidebar search results (filters notes list).
 #[tracing::instrument(skip(notebook))]
 async fn search(
     State(notebook): State<Notebook>,
     Authenticated(authenticated): Authenticated,
     Form(search): Form<Search>,
 ) -> Markup {
-    // Oh no, blocking ...
     let query = search.query.trim();
     let notebook = notebook.lock().unwrap();
+    let tag_filter = (!authenticated).then_some("public");
 
-    let notes = if let Some(tag) = query.strip_prefix('#') {
+    let notes = if query.is_empty() {
+        // Return all authorized notes when query is empty
+        notebook.all_notes(tag_filter)
+    } else if let Some(tag) = query.strip_prefix('#') {
         if !authenticated {
             notebook.search_tag("public")
         } else {
-            // Split multiple tags and compute union
             notebook.search_tag(tag)
         }
     } else {
-        notebook.search_titles(&search.query, (!authenticated).then_some("public"))
+        notebook.search_titles(query, tag_filter)
     };
 
     tracing::info!(number = notes.len(), "search results");
 
-    html! {
-        @for note in notes {
-            div
-                class="p-4 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
-                hx-get={ "/f/" (note.filename_stem) }
-                hx-target="#note-content" {
-                h3 class="text-md font-semibold text-gray-900 dark:text-white" { (note.title) }
-                p class="text-sm text-gray-600 dark:text-gray-300 truncate" { (note.snippet()) }
-            }
-        }
-    }
+    render_note_list(notes)
 }
 
 async fn css() -> impl IntoResponse {
