@@ -23,10 +23,12 @@ const JWT_ISS: &str = "weave";
 
 impl Issuer {
     pub(crate) fn new() -> Result<Self> {
-        let key_pair = Ed25519KeyPair::generate_pkcs8(&ring::rand::SystemRandom::new())?;
+        let key_pair = Ed25519KeyPair::generate_pkcs8(&ring::rand::SystemRandom::new())
+            .map_err(|_| anyhow::anyhow!("failed to generate key pair"))?;
         let encoding_key = jwt::EncodingKey::from_ed_der(key_pair.as_ref());
 
-        let key_pair = Ed25519KeyPair::from_pkcs8(key_pair.as_ref())?;
+        let key_pair = Ed25519KeyPair::from_pkcs8(key_pair.as_ref())
+            .map_err(|_| anyhow::anyhow!("failed to parse key pair"))?;
         let decoding_key = jwt::DecodingKey::from_ed_der(key_pair.public_key().as_ref());
 
         let claims = Claims {
