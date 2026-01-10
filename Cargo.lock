@@ -1324,15 +1324,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "regex-split"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "544861d1810a3e429bb5e80266e537138b0e69e59bed9334326ae129a4c3e676"
-dependencies = [
- "regex",
-]
-
-[[package]]
 name = "regex-syntax"
 version = "0.8.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1919,7 +1910,6 @@ dependencies = [
  "nucleo",
  "rand",
  "regex",
- "regex-split",
  "ring",
  "serde",
  "serde_json",

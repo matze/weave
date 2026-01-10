@@ -15,7 +15,6 @@ maud = { git = "https://github.com/lambda-fairy/maud", features = ["axum"] }
 notify = "8.0.0"
 nucleo = { version = "0.5.0", default-features = false }
 regex = "1.11.1"
-regex-split = "0.1.0"
 ring = "0.17.14"
 serde = { version = "1.0.217", features = ["serde_derive"] }
 serde_json = "1.0.135"

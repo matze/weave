@@ -1,39 +1,86 @@
 //! Render Markdown as HTML.
 
 use maud::{Markup, PreEscaped, html};
-use regex_split::RegexSplit;
+
+#[derive(Debug)]
+enum Segment<'a> {
+    Text(&'a str),
+    Tag(&'a str),
+}
+
+struct Splitter<'a> {
+    text: &'a str,
+    re: regex::Regex,
+    pos: usize,
+    next: Option<regex::Match<'a>>,
+}
+
+impl<'a> Splitter<'a> {
+    fn new(text: &'a str) -> Self {
+        // TODO: constify
+        let re = regex::Regex::new(r#"#[\w]+"#).expect("compiling regex");
+
+        let next = re.find_iter(text).next();
+
+        Self {
+            text,
+            re,
+            pos: 0,
+            next,
+        }
+    }
+}
+
+impl<'a> Iterator for Splitter<'a> {
+    type Item = Segment<'a>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.pos >= self.text.len() {
+            return None;
+        }
+
+        match self.next {
+            Some(m) => {
+                let start = m.start();
+
+                if self.pos < start {
+                    let text = &self.text[self.pos..start];
+                    self.pos = start;
+                    Some(Segment::Text(text))
+                } else {
+                    let text = m.as_str();
+                    self.pos = m.end();
+                    self.next = self.re.find_at(self.text, self.pos);
+                    Some(Segment::Tag(text))
+                }
+            }
+            None => {
+                let text = &self.text[self.pos..];
+                self.pos = self.text.len();
+                Some(Segment::Text(text))
+            }
+        }
+    }
+}
 
 /// Modify tags and internal links and keep the rest untouched.
 fn text_to_html(node: &markdown::mdast::Text) -> Markup {
-    enum Part<'a> {
-        Text(&'a str),
-        Tag(&'a str),
-    }
-
-    // TODO: constify
-    let re = regex::Regex::new("#[\\w]+").expect("compiling regex");
-    let parts = re.split_inclusive_left(&node.value).map(|part| {
-        if part.starts_with('#') {
-            Part::Tag(unsafe { part.get_unchecked(1..) })
-        } else {
-            Part::Text(part)
-        }
-    });
+    let splitter = Splitter::new(&node.value);
 
     html! {
-        @for part in parts {
+        @for part in splitter {
             @match part {
-                Part::Text(text) => { (text) },
-                Part::Tag(tag) => {
+                Segment::Text(text) => { (text) },
+                Segment::Tag(tag) => {
                     a href="#"
                         class="text-sky-600 hover:underline"
                         hx-post="/f/search"
-                        hx-vals={ "{\"query\": \"#" (tag) "\"}" }
+                        hx-vals={ "{\"query\": \"" (tag) "\"}" }
                         hx-target="#search-list"
                         hx-on-htmx-after-request="document.querySelector('input[name=query]').value = this.getAttribute('data-tag')"
-                        data-tag={ "#" (tag) }
+                        data-tag={ (tag) }
                     {
-                        { "#" (tag) }
+                        { (tag) }
                     }
                 },
             }
