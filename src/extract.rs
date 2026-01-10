@@ -1,9 +1,11 @@
-use crate::Issuer;
+use std::convert::Infallible;
+
 use axum::extract::{FromRef, FromRequestParts};
 use axum::http::request::Parts;
 use axum_extra::extract::SignedCookieJar;
 use axum_extra::extract::cookie::Key;
-use std::convert::Infallible;
+
+use crate::Issuer;
 
 /// Extract authentication status based on the presence and validity of an issued JSON web token in
 /// a request cookie. The inner bool says if authentication is valid or not.

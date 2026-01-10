@@ -1,4 +1,10 @@
-use crate::extract::Authenticated;
+mod extract;
+mod jwt;
+mod md;
+mod zk;
+
+use std::sync::{Arc, Mutex, mpsc};
+
 use anyhow::Result;
 use axum::Router;
 use axum::extract::{Form, FromRef, Path, State};
@@ -9,17 +15,11 @@ use axum_extra::extract::SignedCookieJar;
 use axum_extra::extract::cookie::{Cookie, Key};
 use futures_concurrency::future::Join;
 use maud::{DOCTYPE, Markup, html};
-use notify::{
-    EventKind, Watcher,
-    event::{AccessKind, AccessMode},
-};
+use notify::event::{AccessKind, AccessMode};
+use notify::{EventKind, Watcher};
 use serde::Deserialize;
-use std::sync::{Arc, Mutex, mpsc};
 
-mod extract;
-mod jwt;
-mod md;
-mod zk;
+use crate::extract::Authenticated;
 
 type Notebook = Arc<Mutex<zk::Notebook>>;
 

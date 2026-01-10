@@ -1,9 +1,10 @@
 //! Interface with the `zk` binary.
 
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Read};
 use std::process::{Command, Stdio};
+
+use serde::Deserialize;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -11,8 +12,6 @@ pub enum Error {
     Process(#[from] std::io::Error),
     #[error("failed to open stdout pipe")]
     Pipe,
-    // #[error("failed to load from disk")]
-    // Load,
     #[error("failed to parse JSON: {0}")]
     Json(#[from] serde_json::Error),
 }
