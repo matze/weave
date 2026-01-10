@@ -1,25 +1,24 @@
+mod assets;
 mod extract;
 mod jwt;
 mod md;
+mod pages;
+mod partials;
 mod zk;
 
 use std::sync::{Arc, Mutex, mpsc};
 
 use anyhow::Result;
 use axum::Router;
-use axum::extract::{Form, FromRef, Path, State};
-use axum::http::header;
-use axum::response::{IntoResponse, Redirect};
+use axum::extract::{Form, FromRef, State};
+use axum::response::Redirect;
 use axum::routing::{get, post};
 use axum_extra::extract::SignedCookieJar;
 use axum_extra::extract::cookie::{Cookie, Key};
 use futures_concurrency::future::Join;
-use maud::{DOCTYPE, Markup, html};
 use notify::event::{AccessKind, AccessMode};
 use notify::{EventKind, Watcher};
 use serde::Deserialize;
-
-use crate::extract::Authenticated;
 
 type Notebook = Arc<Mutex<zk::Notebook>>;
 
@@ -55,56 +54,6 @@ impl FromRef<AppState> for Key {
     }
 }
 
-fn head() -> Markup {
-    html! {
-        head {
-            meta charset="utf-8";
-            meta name="viewport" content="width=device-width, initial-scale=1.0";
-            link rel="stylesheet" type="text/css" href="app.css";
-            title {"weave notes"};
-            script {
-                (maud::PreEscaped(r#"
-                function showNote() {
-                    document.getElementById('sidebar').classList.add('mobile-hidden');
-                    document.getElementById('note-content').classList.add('mobile-visible');
-                }
-                function showSidebar() {
-                    document.getElementById('sidebar').classList.remove('mobile-hidden');
-                    document.getElementById('note-content').classList.remove('mobile-visible');
-                }
-                "#))
-            }
-        }
-    }
-}
-
-async fn login() -> Markup {
-    html! {
-        (DOCTYPE)
-        html lang="en" {
-            head { (head()) }
-            body class="flex h-screen items-center justify-center bg-white dark:bg-gray-900 text-black dark:text-white" {
-                div class="flex flex-col items-center justify-center p-8" {
-                    form action="/login" method="post" {
-                        input
-                            type="password"
-                            name="password"
-                            id="password"
-                            placeholder="Password"
-                            class="w-full p-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            {}
-
-                        button
-                            type="submit"
-                            class="mt-6 px-6 py-2 bg-blue-500 text-white font-semibold rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                            {"Login"}
-                        }
-                }
-            }
-        }
-    }
-}
-
 #[derive(Deserialize)]
 struct Login {
     password: String,
@@ -126,198 +75,6 @@ async fn do_login(
         tracing::warn!("failed login attempt");
         (jar.remove("jwt"), Redirect::to("/"))
     }
-}
-
-fn locked_icon() -> Markup {
-    html! {
-        svg class="w-6 h-6 text-gray-400 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" {
-            path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14v3m-3-6V7a3 3 0 1 1 6 0v4m-8 0h10a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1Z" {}
-        }
-    }
-}
-
-fn unlocked_icon() -> Markup {
-    html! {
-        svg class="w-6 h-6 text-gray-400 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" {
-          path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14v3m4-6V7a3 3 0 1 1 6 0v4M5 11h10a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1Z" {}
-        }
-    }
-}
-
-fn back_icon() -> Markup {
-    html! {
-        svg class="w-6 h-6" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" {
-            path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" {}
-        }
-    }
-}
-
-/// Render a list of notes for the sidebar.
-fn render_note_list<'a>(notes: impl IntoIterator<Item = &'a zk::Note>) -> Markup {
-    html! {
-        @for note in notes {
-            div
-                class="p-4 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600"
-                hx-get={ "/f/" (note.filename_stem) }
-                hx-target="#note-content"
-                onclick="showNote()" {
-                h3 class="text-md font-semibold text-gray-900 dark:text-white" { (note.title) }
-                p class="text-sm text-gray-600 dark:text-gray-300 truncate" { (note.snippet()) }
-            }
-        }
-    }
-}
-
-async fn index(
-    State(notebook): State<Notebook>,
-    Authenticated(authenticated): Authenticated,
-) -> Markup {
-    let icon = if authenticated {
-        unlocked_icon()
-    } else {
-        locked_icon()
-    };
-
-    // Hold the lock during rendering to avoid cloning notes
-    let notebook = notebook.lock().unwrap();
-    let tag_filter = (!authenticated).then_some("public");
-    let notes = notebook.all_notes(tag_filter);
-
-    html! {
-        (DOCTYPE)
-        html lang="en" {
-            head { (head()) }
-            body class="flex flex-col md:flex-row h-screen bg-white dark:bg-gray-800 text-black dark:text-white" {
-                div id="sidebar" class="w-full md:w-80 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-y-auto flex-shrink-0 h-screen md:h-auto" {
-                    div class="p-4 border-b border-gray-200 dark:border-gray-700" {
-                        div class="flex" {
-                            div class="flex flex-col flex-auto" {
-                                span class="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-green-600" {"weave notes"}
-                            }
-
-                            div class="flex flex-col flex-none" {
-                                a href="/login" {
-                                    (icon)
-                                }
-                            }
-                        }
-                    }
-
-                    div class="p-4 border-b border-gray-200 dark:border-gray-700" {
-                        input type="search"
-                            name="query"
-                            placeholder="Filter notes..."
-                            class="w-full p-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            hx-post="/f/search"
-                            hx-trigger="input changed delay:300ms, keyup[key=='Enter']"
-                            hx-target="#search-list"
-                            hx-swap="innerHTML"
-                            {}
-                    }
-
-                    div class="flex-grow overflow-y-auto max-h-xs md:max-h-none" id="search-list" {
-                        (render_note_list(notes))
-                    }
-                }
-
-                div class="flex flex-grow flex-col overflow-y-auto h-screen md:h-auto md:basis-1/2" id="note-content" {}
-
-                // HTMX script
-                script src="/htmx.2.0.4.min.js" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" {}
-            }
-        }
-    }
-}
-
-/// Return note content fragment consisting of title div and rendered markdown.
-async fn note(
-    State(notebook): State<Notebook>,
-    Authenticated(authenticated): Authenticated,
-    Path(stem): Path<String>,
-) -> Markup {
-    let Some(note) = notebook.lock().unwrap().note(&stem) else {
-        return html! {};
-    };
-
-    if !authenticated && !note.has("public") {
-        html! {
-            div class="h-screen flex items-center justify-center" {
-                div class="flex flex-col items-center justify-center p-8" {
-                    h2 class="text-xl font-bold" { "access denied" }
-                }
-            }
-        }
-    } else {
-        html! {
-            div class="p-4 border-b border-gray-200 dark:border-gray-700" {
-                div class="flex items-center gap-3" {
-                    button
-                        class="md:hidden p-1 -ml-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                        onclick="showSidebar()"
-                        aria-label="Back to notes" {
-                        (back_icon())
-                    }
-                    h2 class="text-xl font-bold dark:text-white" { (note.title) }
-                }
-            }
-
-            div class="flex-grow p-4 overflow-y-auto" {
-                div class="prose max-w-none dark:prose-invert" {
-                    (tokio::task::spawn_blocking(move || md::markdown_to_html(&note.body))
-                        .await
-                        .expect("join working"))
-                }
-            }
-        }
-    }
-}
-
-#[derive(Deserialize, Debug)]
-struct Search {
-    query: String,
-}
-
-/// Return fragment for the sidebar search results (filters notes list).
-#[tracing::instrument(skip(notebook))]
-async fn search(
-    State(notebook): State<Notebook>,
-    Authenticated(authenticated): Authenticated,
-    Form(search): Form<Search>,
-) -> Markup {
-    let query = search.query.trim();
-    let notebook = notebook.lock().unwrap();
-    let tag_filter = (!authenticated).then_some("public");
-
-    let notes = if query.is_empty() {
-        // Return all authorized notes when query is empty
-        notebook.all_notes(tag_filter)
-    } else if let Some(tag) = query.strip_prefix('#') {
-        if !authenticated {
-            notebook.search_tag("public")
-        } else {
-            notebook.search_tag(tag)
-        }
-    } else {
-        notebook.search_titles(query, tag_filter)
-    };
-
-    tracing::info!(number = notes.len(), "search results");
-
-    render_note_list(notes)
-}
-
-async fn css() -> impl IntoResponse {
-    (
-        [(header::CONTENT_TYPE, "text/css")],
-        include_str!(concat!(env!("OUT_DIR"), "/app.css")),
-    )
-}
-
-async fn htmx_js() -> impl IntoResponse {
-    (
-        [(header::CONTENT_TYPE, "text/css")],
-        include_str!("assets/htmx.2.0.4.min.js"),
-    )
 }
 
 async fn watch(notebook: Notebook) -> Result<()> {
@@ -382,12 +139,12 @@ async fn main() -> Result<()> {
     };
 
     let app = Router::new()
-        .route("/", get(index))
-        .route("/login", get(login).post(do_login))
-        .route("/f/search", post(search))
-        .route("/f/{stem}", get(note))
-        .route("/app.css", get(css))
-        .route("/htmx.2.0.4.min.js", get(htmx_js))
+        .route("/", get(pages::index::index))
+        .route("/login", get(pages::login::login).post(do_login))
+        .route("/f/search", post(partials::search::search))
+        .route("/f/{stem}", get(partials::note::note))
+        .route("/app.css", get(assets::css))
+        .route("/htmx.2.0.4.min.js", get(assets::htmx_js))
         .with_state(state);
 
     tracing::info!("serving on localhost:8000");
