@@ -28,7 +28,7 @@ pub(crate) async fn index(
                     div class="p-4 border-b border-gray-200 dark:border-gray-700" {
                         div class="flex" {
                             div class="flex flex-col flex-auto" {
-                                span class="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-green-600" {"weave notes"}
+                                span class="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-green-600" {"weave"}
                             }
 
                             div class="flex flex-col flex-none" {
