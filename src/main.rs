@@ -65,7 +65,6 @@ async fn do_login(
     State(issuer): State<Issuer>,
     Form(login): Form<Login>,
 ) -> (SignedCookieJar, Redirect) {
-    // TODO: use argon2
     if login.password == state.password {
         tracing::info!("successful login");
         let token = issuer.new_token();
@@ -92,6 +91,7 @@ async fn watch(notebook: Notebook) -> Result<()> {
                 ) {
                     for path in paths.into_iter() {
                         if path.extension().map(|ext| ext == "md").unwrap_or(false) {
+                            tracing::debug!(?path, "changed");
                             tx.send(path).unwrap();
                         }
                     }
