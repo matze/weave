@@ -167,13 +167,13 @@ impl Note {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::distributions::Alphanumeric;
-    use rand::{Rng, thread_rng};
+    use rand::Rng;
+    use rand::distr::Alphanumeric;
 
     impl Note {
         /// Generate a random new note.
         fn new(title: &str, body: &str, tags: Vec<String>) -> Self {
-            let filename_stem: String = thread_rng()
+            let filename_stem: String = rand::rng()
                 .sample_iter(&Alphanumeric)
                 .take(10)
                 .map(char::from)
