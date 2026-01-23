@@ -27,7 +27,7 @@ where
         let authenticated = jar
             .map(|jar| {
                 jar.get("jwt")
-                    .and_then(|cookie| Some(Authenticated(issuer.is_valid(cookie.value_trimmed()))))
+                    .map(|cookie| Authenticated(issuer.is_valid(cookie.value_trimmed())))
             })
             .ok()
             .flatten()

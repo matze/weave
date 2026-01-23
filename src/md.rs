@@ -109,7 +109,7 @@ fn node_to_html(node: &markdown::mdast::Node) -> Markup {
                 ol {
                     @for node in &list.children {
                         li class="list-decimal ml-6 my-2" {
-                            (node_to_html(&node))
+                            (node_to_html(node))
                         }
                     }
                 }
@@ -118,7 +118,7 @@ fn node_to_html(node: &markdown::mdast::Node) -> Markup {
                 ul {
                     @for node in &list.children {
                         li class="list-disc ml-6 my-2" {
-                            (node_to_html(&node))
+                            (node_to_html(node))
                         }
                     }
                 }
@@ -126,7 +126,7 @@ fn node_to_html(node: &markdown::mdast::Node) -> Markup {
         },
         markdown::mdast::Node::ListItem(item) => html! {
             @for node in &item.children {
-                (node_to_html(&node))
+                (node_to_html(node))
             }
         },
         markdown::mdast::Node::Toml(_) => todo!(),
@@ -148,7 +148,7 @@ fn node_to_html(node: &markdown::mdast::Node) -> Markup {
         markdown::mdast::Node::Emphasis(emphasis) => html! {
             em class="italic" {
                 @for node in &emphasis.children {
-                    (node_to_html(&node))
+                    (node_to_html(node))
                 }
             }
         },
@@ -169,7 +169,7 @@ fn node_to_html(node: &markdown::mdast::Node) -> Markup {
 
             let text = html! {
                 @for node in &link.children {
-                    (node_to_html(&node))
+                    (node_to_html(node))
                 }
             };
 
@@ -192,7 +192,7 @@ fn node_to_html(node: &markdown::mdast::Node) -> Markup {
         markdown::mdast::Node::Strong(strong) => html! {
             strong class="font-bold" {
                 @for node in &strong.children {
-                    (node_to_html(&node))
+                    (node_to_html(node))
                 }
             }
         },
@@ -208,7 +208,7 @@ fn node_to_html(node: &markdown::mdast::Node) -> Markup {
         markdown::mdast::Node::Heading(heading) => {
             let children = html! {
                 @for node in &heading.children {
-                    (node_to_html(&node))
+                    (node_to_html(node))
                 }
             };
 
@@ -227,21 +227,21 @@ fn node_to_html(node: &markdown::mdast::Node) -> Markup {
         markdown::mdast::Node::Table(table) => html! {
             table class="border-collapse my-4 w-full" {
                 @for node in &table.children {
-                    (node_to_html(&node))
+                    (node_to_html(node))
                 }
             }
         },
         markdown::mdast::Node::TableRow(row) => html! {
             tr {
                 @for node in &row.children {
-                    (node_to_html(&node))
+                    (node_to_html(node))
                 }
             }
         },
         markdown::mdast::Node::TableCell(cell) => html! {
             td {
                 @for node in &cell.children {
-                    (node_to_html(&node))
+                    (node_to_html(node))
                 }
             }
         },
@@ -249,7 +249,7 @@ fn node_to_html(node: &markdown::mdast::Node) -> Markup {
         markdown::mdast::Node::Paragraph(paragraph) => html! {
             p class="my-4 leading-relaxed" {
                 @for node in &paragraph.children {
-                    (node_to_html(&node))
+                    (node_to_html(node))
                 }
             }
         },

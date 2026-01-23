@@ -84,16 +84,16 @@ async fn watch(notebook: Notebook) -> Result<()> {
         let (tx, rx) = mpsc::channel();
 
         let mut watcher = notify::recommended_watcher(move |result| {
-            if let Ok(notify::Event { kind, paths, .. }) = result {
-                if matches!(
+            if let Ok(notify::Event { kind, paths, .. }) = result
+                && matches!(
                     kind,
                     EventKind::Access(AccessKind::Close(AccessMode::Write))
-                ) {
-                    for path in paths.into_iter() {
-                        if path.extension().map(|ext| ext == "md").unwrap_or(false) {
-                            tracing::debug!(?path, "changed");
-                            tx.send(path).unwrap();
-                        }
+                )
+            {
+                for path in paths.into_iter() {
+                    if path.extension().map(|ext| ext == "md").unwrap_or(false) {
+                        tracing::debug!(?path, "changed");
+                        tx.send(path).unwrap();
                     }
                 }
             }
