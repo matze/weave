@@ -140,6 +140,7 @@ async fn main() -> Result<()> {
 
     let app = Router::new()
         .route("/", get(pages::index::index))
+        .route("/note/{stem}", get(pages::note::note))
         .route("/login", get(pages::login::login).post(do_login))
         .route("/f/search", post(partials::search::search))
         .route("/f/{stem}", get(partials::note::note))
