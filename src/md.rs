@@ -17,7 +17,11 @@ struct Splitter<'a> {
 }
 
 impl<'a> Splitter<'a> {
-    fn next_match(re: &regex::Regex, text: &'a str, start: usize) -> Option<(usize, usize, Segment<'a>)> {
+    fn next_match(
+        re: &regex::Regex,
+        text: &'a str,
+        start: usize,
+    ) -> Option<(usize, usize, Segment<'a>)> {
         let caps = re.captures_at(text, start)?;
         let m = caps.get(0).unwrap();
         let segment = if caps.name("tag").is_some() {
@@ -33,7 +37,12 @@ impl<'a> Splitter<'a> {
         let re = regex::Regex::new(r#"(?P<tag>#[\w]+)|(?P<url>https?://[^\s<>]+)"#)
             .expect("compiling regex");
         let next = Self::next_match(&re, text, 0);
-        Self { text, re, pos: 0, next }
+        Self {
+            text,
+            re,
+            pos: 0,
+            next,
+        }
     }
 }
 

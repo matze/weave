@@ -142,7 +142,12 @@ async fn main() -> Result<()> {
         .route("/note/{stem}", get(pages::note::note))
         .route("/login", get(pages::login::login).post(do_login))
         .route("/f/search", post(partials::search::search))
-        .route("/f/{stem}", get(partials::note::note))
+        .route(
+            "/f/{stem}",
+            get(partials::note::note).put(partials::edit::save),
+        )
+        .route("/f/{stem}/edit", get(partials::edit::edit))
+        .route("/f/{stem}/preview", post(partials::edit::preview))
         .route("/app.css", get(assets::css))
         .route("/htmx.2.0.4.min.js", get(assets::htmx_js))
         .with_state(state);

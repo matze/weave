@@ -28,7 +28,7 @@ pub(crate) fn layout<'a>(
                                 span class="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-green-600" {"weave"}
                             }
 
-                            div class="flex flex-col flex-none" {
+                            div class="flex flex-row flex-none items-center gap-2" {
                                 a href="/login" {
                                     (icon)
                                 }

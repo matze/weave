@@ -1,3 +1,4 @@
+pub(crate) mod edit;
 pub(crate) mod head;
 pub(crate) mod layout;
 pub(crate) mod note;

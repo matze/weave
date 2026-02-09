@@ -28,6 +28,8 @@ pub struct Note {
     pub title: String,
     pub body: String,
     pub tags: Vec<String>,
+    #[serde(rename = "rawContent")]
+    pub raw_content: String,
 }
 
 pub struct Notebook {
@@ -101,6 +103,7 @@ impl Notebook {
         }
 
         self.notes.push(note);
+        self.tags = tags_from_notes(&self.notes);
 
         Ok(())
     }
