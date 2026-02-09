@@ -2,32 +2,38 @@
 
 use maud::{Markup, PreEscaped, html};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 enum Segment<'a> {
     Text(&'a str),
     Tag(&'a str),
+    Url(&'a str),
 }
 
 struct Splitter<'a> {
     text: &'a str,
     re: regex::Regex,
     pos: usize,
-    next: Option<regex::Match<'a>>,
+    next: Option<(usize, usize, Segment<'a>)>,
 }
 
 impl<'a> Splitter<'a> {
+    fn next_match(re: &regex::Regex, text: &'a str, start: usize) -> Option<(usize, usize, Segment<'a>)> {
+        let caps = re.captures_at(text, start)?;
+        let m = caps.get(0).unwrap();
+        let segment = if caps.name("tag").is_some() {
+            Segment::Tag(m.as_str())
+        } else {
+            Segment::Url(m.as_str())
+        };
+        Some((m.start(), m.end(), segment))
+    }
+
     fn new(text: &'a str) -> Self {
         // TODO: constify
-        let re = regex::Regex::new(r#"#[\w]+"#).expect("compiling regex");
-
-        let next = re.find_iter(text).next();
-
-        Self {
-            text,
-            re,
-            pos: 0,
-            next,
-        }
+        let re = regex::Regex::new(r#"(?P<tag>#[\w]+)|(?P<url>https?://[^\s<>]+)"#)
+            .expect("compiling regex");
+        let next = Self::next_match(&re, text, 0);
+        Self { text, re, pos: 0, next }
     }
 }
 
@@ -40,18 +46,15 @@ impl<'a> Iterator for Splitter<'a> {
         }
 
         match self.next {
-            Some(m) => {
-                let start = m.start();
-
+            Some((start, end, segment)) => {
                 if self.pos < start {
                     let text = &self.text[self.pos..start];
                     self.pos = start;
                     Some(Segment::Text(text))
                 } else {
-                    let text = m.as_str();
-                    self.pos = m.end();
-                    self.next = self.re.find_at(self.text, self.pos);
-                    Some(Segment::Tag(text))
+                    self.pos = end;
+                    self.next = Self::next_match(&self.re, self.text, self.pos);
+                    Some(segment)
                 }
             }
             None => {
@@ -82,6 +85,9 @@ fn text_to_html(node: &markdown::mdast::Text) -> Markup {
                     {
                         { (tag) }
                     }
+                },
+                Segment::Url(url) => {
+                    a href=(url) class="text-sky-600 hover:underline" { (url) }
                 },
             }
         }
