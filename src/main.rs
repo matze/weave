@@ -77,8 +77,7 @@ async fn do_login(
 }
 
 async fn watch(notebook: Notebook) -> Result<()> {
-    // TODO: do better.
-    let path = std::path::PathBuf::from(std::env::var("ZK_NOTEBOOK_DIR")?);
+    let path = notebook.lock().unwrap().path.clone();
 
     tokio::task::spawn_blocking(move || {
         let (tx, rx) = mpsc::channel();

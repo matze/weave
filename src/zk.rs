@@ -2,12 +2,15 @@
 
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Read};
+use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
 use serde::Deserialize;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
+    #[error("failed to convert env var: {0}")]
+    Var(#[from] std::env::VarError),
     #[error("failed to call `zk` binary: {0}")]
     Process(#[from] std::io::Error),
     #[error("failed to open stdout pipe")]
@@ -28,6 +31,9 @@ pub struct Note {
 }
 
 pub struct Notebook {
+    /// Path to the notebook.
+    pub path: PathBuf,
+    /// List of loaded notes.
     pub notes: Vec<Note>,
     /// Maps tag name to [`Note`] filename
     pub tags: HashMap<String, Vec<String>>,
@@ -49,6 +55,8 @@ fn tags_from_notes(notes: &[Note]) -> HashMap<String, Vec<String>> {
 
 impl Notebook {
     pub fn load() -> Result<Self, Error> {
+        let path = std::path::PathBuf::from(std::env::var("ZK_NOTEBOOK_DIR")?);
+
         let mut child = Command::new("zk")
             .args(["list", "--format", "jsonl"])
             .stdout(Stdio::piped())
@@ -66,7 +74,7 @@ impl Notebook {
 
         let tags = tags_from_notes(&notes);
 
-        Ok(Self { notes, tags })
+        Ok(Self { path, notes, tags })
     }
 
     /// Reload the note with the given stem.
@@ -193,9 +201,10 @@ mod tests {
 
     #[test]
     fn search_titles() {
+        let path = std::path::PathBuf::new();
         let notes = vec![Note::new("foo", "", vec![]), Note::new("bar", "", vec![])];
         let tags = tags_from_notes(&notes);
-        let notebook = Notebook { notes, tags };
+        let notebook = Notebook { path, notes, tags };
         let result = notebook.search_titles("fo", None);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].title, "foo");
@@ -203,12 +212,13 @@ mod tests {
 
     #[test]
     fn no_panic_on_uppercase() {
+        let path = std::path::PathBuf::new();
         let notes = vec![
             Note::new("Coffees", "", vec![]),
             Note::new("bar", "", vec![]),
         ];
         let tags = tags_from_notes(&notes);
-        let notebook = Notebook { notes, tags };
+        let notebook = Notebook { path, notes, tags };
         let _ = notebook.search_titles("C", None);
         let _ = notebook.search_titles("Co", None);
         let _ = notebook.search_titles("Cof", None);
