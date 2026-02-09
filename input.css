@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+.prose > :first-child > :first-child {
+  margin-top: 0;
+}
+
 @media (max-width: 767px) {
   #sidebar.mobile-hidden {
     display: none;
