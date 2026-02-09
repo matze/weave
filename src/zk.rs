@@ -127,10 +127,11 @@ impl Notebook {
 
     /// Fuzzy search for `query` inside titles and return matching [`Note`]s.
     pub fn search_titles(&self, query: &str, with_tag: Option<&str>) -> Vec<&Note> {
+        let query = query.to_lowercase();
         let mut matcher = nucleo::Matcher::new(nucleo::Config::DEFAULT);
         let mut needle_buf = Vec::new();
         let mut haystack_buf = Vec::new();
-        let needle = nucleo::Utf32Str::new(query, &mut needle_buf);
+        let needle = nucleo::Utf32Str::new(&query, &mut needle_buf);
 
         self.notes
             .iter()
@@ -198,5 +199,20 @@ mod tests {
         let result = notebook.search_titles("fo", None);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].title, "foo");
+    }
+
+    #[test]
+    fn no_panic_on_uppercase() {
+        let notes = vec![
+            Note::new("Coffees", "", vec![]),
+            Note::new("bar", "", vec![]),
+        ];
+        let tags = tags_from_notes(&notes);
+        let notebook = Notebook { notes, tags };
+        let _ = notebook.search_titles("C", None);
+        let _ = notebook.search_titles("Co", None);
+        let _ = notebook.search_titles("Cof", None);
+        let result = notebook.search_titles("Coff", None);
+        assert_eq!(result.len(), 1);
     }
 }
