@@ -6,6 +6,7 @@ pub(crate) fn head() -> Markup {
             meta charset="utf-8";
             meta name="viewport" content="width=device-width, initial-scale=1.0";
             link rel="stylesheet" type="text/css" href="/app.css";
+            link rel="shortcut icon" type="image/svg+xml" href="/favicon.svg";
             title {"weave"};
             script {
                 (maud::PreEscaped(r#"

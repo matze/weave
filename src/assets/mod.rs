@@ -3,6 +3,13 @@ use axum::response::IntoResponse;
 
 pub(crate) mod icons;
 
+pub(crate) async fn favicon() -> impl IntoResponse {
+    (
+        [(header::CONTENT_TYPE, "image/svg+xml")],
+        include_str!("favicon.svg"),
+    )
+}
+
 pub(crate) async fn css() -> impl IntoResponse {
     (
         [(header::CONTENT_TYPE, "text/css")],
