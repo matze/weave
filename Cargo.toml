@@ -10,7 +10,7 @@ axum-extra = { version = "0.12.5", features = ["cookie-signed"] }
 futures-concurrency = "7.6.3"
 jiff = { version = "0.2", features = ["serde"] }
 jsonwebtoken = { version = "10.2.0", features = ["rust_crypto"] }
-markdown = "1.0.0-alpha.21"
+markdown = "1.0.0"
 maud = { git = "https://github.com/lambda-fairy/maud", features = ["axum"] }
 notify = "8.0.0"
 nucleo = { version = "0.5.0", default-features = false }
