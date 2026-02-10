@@ -20,7 +20,8 @@ pub(crate) fn layout<'a>(
         (DOCTYPE)
         html lang="en" {
             (partials::head::head())
-            body class="font-sans flex flex-col md:flex-row h-screen bg-white dark:bg-gray-800 text-black dark:text-white" {
+            body class="font-sans bg-gray-100 dark:bg-gray-900 text-black dark:text-white" {
+              div class="max-w-7xl mx-auto flex flex-col md:flex-row h-screen bg-white dark:bg-gray-800" {
                 div id="sidebar" class="w-full md:w-80 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-y-auto flex-shrink-0 h-screen md:h-auto" {
                     div class="p-4 border-b border-gray-200 dark:border-gray-700" {
                         div class="flex" {
@@ -68,6 +69,7 @@ pub(crate) fn layout<'a>(
                         (content)
                     }
                 }
+              }
 
                 script src="/htmx.2.0.4.min.js" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" {}
             }
