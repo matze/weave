@@ -37,15 +37,25 @@ pub(crate) fn layout<'a>(
                     }
 
                     div class="p-4 border-b border-gray-200 dark:border-gray-700" {
-                        input type="search"
-                            name="query"
-                            placeholder="Filter notes..."
-                            class="w-full p-2 rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            hx-post="/f/search"
-                            hx-trigger="input changed delay:300ms, keyup[key=='Enter']"
-                            hx-target="#search-list"
-                            hx-swap="innerHTML"
-                            {}
+                        div class="relative" {
+                            input #filter-input type="search"
+                                name="query"
+                                placeholder="Filter notes..."
+                                class="w-full p-2 pr-8 rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                hx-post="/f/search"
+                                hx-trigger="input changed delay:300ms, keyup[key=='Enter']"
+                                hx-target="#search-list"
+                                hx-swap="innerHTML"
+                                {}
+
+                            button #filter-clear type="button"
+                                class="absolute cursor-pointer right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hidden"
+                                onclick="let i=document.getElementById('filter-input');i.value='';htmx.ajax('POST','/f/search',{target:'#search-list',values:{query:''}});this.classList.add('hidden')"
+                                { "✕" }
+                        }
+                        script {
+                            (maud::PreEscaped("document.getElementById('filter-input').addEventListener('input',function(){document.getElementById('filter-clear').classList.toggle('hidden',!this.value)})"))
+                        }
                     }
 
                     div class="flex-grow overflow-y-auto max-h-xs md:max-h-none" id="search-list" {

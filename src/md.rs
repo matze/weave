@@ -89,7 +89,7 @@ fn text_to_html(node: &markdown::mdast::Text) -> Markup {
                         hx-post="/f/search"
                         hx-vals={ "{\"query\": \"" (tag) "\"}" }
                         hx-target="#search-list"
-                        hx-on-htmx-after-request="document.querySelector('input[name=query]').value = this.getAttribute('data-tag')"
+                        hx-on-htmx-after-request="document.querySelector('input[name=query]').value = this.getAttribute('data-tag');document.getElementById('filter-clear').classList.remove('hidden')"
                         data-tag={ (tag) }
                     {
                         { (tag) }
