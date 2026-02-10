@@ -60,7 +60,8 @@ pub(crate) async fn edit(
         .unwrap()
         .note(&stem)
         .ok_or(StatusCode::NOT_FOUND)?
-        .raw_content;
+        .raw_content()
+        .to_owned();
 
     Ok(edit_form(&stem, &content))
 }
@@ -104,7 +105,7 @@ pub(crate) async fn save(
                     aria-label="Back to notes" {
                     (assets::icons::back())
                 }
-                h2 class="text-xl font-bold dark:text-white" { (note.title) }
+                h2 class="text-xl font-bold dark:text-white" { (note.title()) }
                 button
                     class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
                     hx-get={ "/f/" (stem) "/edit" }
@@ -117,7 +118,7 @@ pub(crate) async fn save(
 
         div class="flex-grow px-4 pt-6 pb-4 overflow-y-auto" {
             div class="prose dark:prose-invert" {
-                (tokio::task::spawn_blocking(move || md::markdown_to_html(&note.body))
+                (tokio::task::spawn_blocking(move || md::markdown_to_html(note.body()))
                     .await
                     .expect("join working"))
             }

@@ -32,7 +32,7 @@ pub(crate) async fn note(
                         aria-label="Back to notes" {
                         (assets::icons::back())
                     }
-                    h2 class="text-xl font-bold dark:text-white" { (note.title) }
+                    h2 class="text-xl font-bold dark:text-white" { (note.title()) }
                     @if authenticated {
                         button
                             class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-pointer"
@@ -47,7 +47,7 @@ pub(crate) async fn note(
 
             div class="flex-grow px-4 pt-6 pb-4 overflow-y-auto" {
                 div class="prose dark:prose-invert" {
-                    (tokio::task::spawn_blocking(move || md::markdown_to_html(&note.body))
+                    (tokio::task::spawn_blocking(move || md::markdown_to_html(note.body()))
                         .await
                         .expect("join working"))
                 }

@@ -20,7 +20,7 @@ pub(crate) async fn note(
             .collect();
         let note_data = notebook
             .note(&stem)
-            .map(|n| (n.title.clone(), n.body.clone(), n.has("public")));
+            .map(|n| (n.title().to_owned(), n.body().to_owned(), n.has("public")));
         (notes, note_data)
     };
 

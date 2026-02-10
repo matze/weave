@@ -1,27 +1,12 @@
-[package]
-name = "weave"
+[workspace]
+members = ["crates/*"]
+resolver = "2"
+
+[workspace.package]
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.93"
 
-[dependencies]
-anyhow = "1.0.95"
-axum = { version = "0.8.1", features = ["macros"] }
-axum-extra = { version = "0.12.5", features = ["cookie-signed"] }
-futures-concurrency = "7.6.3"
-jiff = { version = "0.2", features = ["serde"] }
-jsonwebtoken = { version = "10.2.0", features = ["rust_crypto"] }
-pulldown-cmark = "0.13"
-maud = { git = "https://github.com/lambda-fairy/maud", features = ["axum"] }
-notify = "8.0.0"
-nucleo = { version = "0.5.0", default-features = false }
-regex = "1.11.1"
-ring = "0.17.14"
-serde = { version = "1.0.217", features = ["serde_derive"] }
-serde_json = "1.0.135"
-thiserror = "2.0.10"
-tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread"] }
-tracing = "0.1.41"
-tracing-subscriber = "0.3.19"
-
-[dev-dependencies]
-rand = "0.9.2"
+[profile.release]
+strip = "debuginfo"
+lto = "fat"
