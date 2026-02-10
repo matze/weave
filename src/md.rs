@@ -1,6 +1,11 @@
 //! Render Markdown as HTML.
 
+use std::sync::LazyLock;
+
 use maud::{Markup, PreEscaped, html};
+use pulldown_cmark::{Event, Options, Parser, Tag as CmarkTag};
+
+// ── Text segmentation (unchanged) ──────────────────────────────────
 
 #[derive(Debug, Clone, Copy)]
 enum Segment<'a> {
@@ -75,14 +80,152 @@ impl<'a> Iterator for Splitter<'a> {
     }
 }
 
+// ── Tree ────────────────────────────────────────────────────────────
+
+enum MdTag {
+    Root,
+    Paragraph,
+    Heading(u8),
+    BlockQuote,
+    CodeBlock,
+    OrderedList,
+    UnorderedList,
+    ListItem { ordered: bool },
+    Emphasis,
+    Strong,
+    Strikethrough,
+    WikiLink(String),
+    ExternalLink(String),
+    Table,
+    TableHead,
+    TableRow,
+    TableHeadCell,
+    TableBodyCell,
+    Image { url: String, title: String },
+}
+
+enum MdNode {
+    Element(MdTag, Vec<MdNode>),
+    /// Text that goes through `Splitter` for hashtag/URL detection.
+    Text(String),
+    /// Text rendered verbatim (inside code blocks, link labels).
+    Plain(String),
+    InlineCode(String),
+    RawHtml(String),
+    SoftBreak,
+    HardBreak,
+    Rule,
+}
+
+static WIKI_LINK_RE: LazyLock<regex::Regex> =
+    LazyLock::new(|| regex::Regex::new(r"^[\w\d]+$").expect("compiling regex"));
+
+fn build_tree(parser: Parser) -> MdNode {
+    let mut stack: Vec<(MdTag, Vec<MdNode>)> = vec![(MdTag::Root, Vec::new())];
+
+    for event in parser {
+        match event {
+            Event::Start(tag) => {
+                let md_tag = match tag {
+                    CmarkTag::Paragraph => MdTag::Paragraph,
+                    CmarkTag::Heading { level, .. } => MdTag::Heading(level as u8),
+                    CmarkTag::BlockQuote(_) => MdTag::BlockQuote,
+                    CmarkTag::CodeBlock(_) => MdTag::CodeBlock,
+                    CmarkTag::List(Some(_)) => MdTag::OrderedList,
+                    CmarkTag::List(None) => MdTag::UnorderedList,
+                    CmarkTag::Item => {
+                        let ordered = stack
+                            .iter()
+                            .rev()
+                            .any(|(t, _)| matches!(t, MdTag::OrderedList));
+                        MdTag::ListItem { ordered }
+                    }
+                    CmarkTag::Emphasis => MdTag::Emphasis,
+                    CmarkTag::Strong => MdTag::Strong,
+                    CmarkTag::Strikethrough => MdTag::Strikethrough,
+                    CmarkTag::Link { dest_url, .. } => {
+                        if WIKI_LINK_RE.is_match(&dest_url) {
+                            MdTag::WikiLink(dest_url.to_string())
+                        } else {
+                            MdTag::ExternalLink(dest_url.to_string())
+                        }
+                    }
+                    CmarkTag::Table(_) => MdTag::Table,
+                    CmarkTag::TableHead => MdTag::TableHead,
+                    CmarkTag::TableRow => MdTag::TableRow,
+                    CmarkTag::TableCell => {
+                        if stack
+                            .iter()
+                            .rev()
+                            .any(|(t, _)| matches!(t, MdTag::TableHead))
+                        {
+                            MdTag::TableHeadCell
+                        } else {
+                            MdTag::TableBodyCell
+                        }
+                    }
+                    CmarkTag::Image {
+                        dest_url, title, ..
+                    } => MdTag::Image {
+                        url: dest_url.to_string(),
+                        title: title.to_string(),
+                    },
+                    _ => MdTag::Root,
+                };
+                stack.push((md_tag, Vec::new()));
+            }
+            Event::End(_) => {
+                let (tag, children) = stack.pop().unwrap();
+                stack
+                    .last_mut()
+                    .unwrap()
+                    .1
+                    .push(MdNode::Element(tag, children));
+            }
+            Event::Text(t) => {
+                let suppress_splitter = stack
+                    .iter()
+                    .any(|(tag, _)| matches!(tag, MdTag::CodeBlock | MdTag::WikiLink(_)));
+                let node = if suppress_splitter {
+                    MdNode::Plain(t.to_string())
+                } else {
+                    MdNode::Text(t.to_string())
+                };
+                stack.last_mut().unwrap().1.push(node);
+            }
+            Event::Code(c) => {
+                stack
+                    .last_mut()
+                    .unwrap()
+                    .1
+                    .push(MdNode::InlineCode(c.to_string()));
+            }
+            Event::Html(h) | Event::InlineHtml(h) => {
+                stack
+                    .last_mut()
+                    .unwrap()
+                    .1
+                    .push(MdNode::RawHtml(h.to_string()));
+            }
+            Event::SoftBreak => stack.last_mut().unwrap().1.push(MdNode::SoftBreak),
+            Event::HardBreak => stack.last_mut().unwrap().1.push(MdNode::HardBreak),
+            Event::Rule => stack.last_mut().unwrap().1.push(MdNode::Rule),
+            _ => {}
+        }
+    }
+
+    let (_, children) = stack.pop().unwrap();
+    MdNode::Element(MdTag::Root, children)
+}
+
 /// Modify tags and internal links and keep the rest untouched.
-fn text_to_html(node: &markdown::mdast::Text) -> Markup {
-    let splitter = Splitter::new(&node.value);
+fn text_to_html(text: &str) -> Markup {
+    let splitter = Splitter::new(text);
 
     html! {
         @for part in splitter {
             @match part {
-                Segment::Text(text) => { (text) },
+                Segment::Text(t) => { (t) },
                 Segment::Tag(tag) => {
                     a href="#"
                         class="text-sky-600 hover:underline"
@@ -90,9 +233,9 @@ fn text_to_html(node: &markdown::mdast::Text) -> Markup {
                         hx-vals={ "{\"query\": \"" (tag) "\"}" }
                         hx-target="#search-list"
                         hx-on-htmx-after-request="document.querySelector('input[name=query]').value = this.getAttribute('data-tag');document.getElementById('filter-clear').classList.remove('hidden')"
-                        data-tag={ (tag) }
+                        data-tag=(tag)
                     {
-                        { (tag) }
+                        (tag)
                     }
                 },
                 Segment::Url(url) => {
@@ -103,215 +246,167 @@ fn text_to_html(node: &markdown::mdast::Text) -> Markup {
     }
 }
 
-/// Turn [`markdown::mdast::Node`] into servable [`Markup`]
-fn node_to_html(node: &markdown::mdast::Node) -> Markup {
+fn render_children(children: &[MdNode]) -> Markup {
+    html! {
+        @for child in children {
+            (render_node(child))
+        }
+    }
+}
+
+fn collect_text(nodes: &[MdNode]) -> String {
+    let mut s = String::new();
+    for node in nodes {
+        match node {
+            MdNode::Text(t) | MdNode::Plain(t) | MdNode::InlineCode(t) => s.push_str(t),
+            MdNode::Element(_, children) => s.push_str(&collect_text(children)),
+            MdNode::SoftBreak | MdNode::HardBreak => s.push(' '),
+            _ => {}
+        }
+    }
+    s
+}
+
+fn render_node(node: &MdNode) -> Markup {
     match node {
-        markdown::mdast::Node::Root(root) => html! {
-            @for node in &root.children {
-                (node_to_html(node))
-            }
-        },
-        markdown::mdast::Node::Blockquote(blockquote) => html! {
-            blockquote class="border-s-4 border-blue-600 bg-blue-50 dark:bg-blue-950 p-4 rounded my-4 italic text-gray-700 dark:text-gray-300" {
-                @for node in &blockquote.children {
-                    (node_to_html(node))
-                }
-            }
-        },
-        markdown::mdast::Node::FootnoteDefinition(_) => todo!(),
-        markdown::mdast::Node::List(list) => html! {
-            @if list.ordered {
-                ol class="my-4 leading-relaxed" {
-                    @for node in &list.children {
-                        li class="list-decimal ml-6 my-1" {
-                            (node_to_html(node))
-                        }
+        MdNode::Element(tag, children) => match tag {
+            MdTag::Root => render_children(children),
+            MdTag::Paragraph => html! {
+                p class="my-4 leading-relaxed" { (render_children(children)) }
+            },
+            MdTag::Heading(level) => {
+                let inner = render_children(children);
+                match level {
+                    1 => html! { h1 class="text-lg font-bold mt-8 mb-4" { (inner) } },
+                    2 => html! { h2 class="text-base font-bold mt-6 mb-3" { (inner) } },
+                    3 => html! { h3 class="text-base font-semibold mt-5 mb-2" { (inner) } },
+                    4 => {
+                        html! { h4 class="text-sm font-semibold mt-4 mb-2 uppercase tracking-wide" { (inner) } }
+                    }
+                    5 => html! { h5 class="text-sm font-medium mt-3 mb-1" { (inner) } },
+                    _ => {
+                        html! { h6 class="text-sm font-medium mt-3 mb-1 text-gray-500 dark:text-gray-400" { (inner) } }
                     }
                 }
             }
-            @else {
-                ul class="my-4 leading-relaxed" {
-                    @for node in &list.children {
-                        li class="list-disc ml-6 my-1" {
-                            (node_to_html(node))
-                        }
-                    }
+            MdTag::BlockQuote => html! {
+                blockquote class="border-s-4 border-blue-600 bg-blue-50 dark:bg-blue-950 p-4 rounded my-4 italic text-gray-700 dark:text-gray-300" {
+                    (render_children(children))
                 }
-            }
-        },
-        markdown::mdast::Node::ListItem(item) => html! {
-            @for node in &item.children {
-                (node_to_html(node))
-            }
-        },
-        markdown::mdast::Node::Toml(_) => todo!(),
-        markdown::mdast::Node::Yaml(_) => todo!(),
-        markdown::mdast::Node::Break(_) => todo!(),
-        markdown::mdast::Node::InlineCode(code) => html! {
-            code class="bg-gray-100 dark:bg-gray-900 px-1.5 py-0.5 rounded text-[0.875em] font-mono" {
-                (code.value)
-            }
-        },
-        markdown::mdast::Node::InlineMath(_) => todo!(),
-        markdown::mdast::Node::Delete(delete) => html! {
-            del class="line-through" {
-                @for node in &delete.children {
-                    (node_to_html(node))
+            },
+            MdTag::CodeBlock => html! {
+                pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded my-6 overflow-x-auto font-mono text-sm leading-relaxed" {
+                    (render_children(children))
                 }
+            },
+            MdTag::OrderedList => html! {
+                ol class="my-4 leading-relaxed" { (render_children(children)) }
+            },
+            MdTag::UnorderedList => html! {
+                ul class="my-4 leading-relaxed" { (render_children(children)) }
+            },
+            MdTag::ListItem { ordered } => {
+                let class = if *ordered {
+                    "list-decimal ml-6 my-1"
+                } else {
+                    "list-disc ml-6 my-1"
+                };
+                html! { li class=(class) { (render_children(children)) } }
             }
-        },
-        markdown::mdast::Node::Emphasis(emphasis) => html! {
-            em class="italic" {
-                @for node in &emphasis.children {
-                    (node_to_html(node))
-                }
-            }
-        },
-        markdown::mdast::Node::MdxFlowExpression(_) => todo!(),
-        markdown::mdast::Node::MdxjsEsm(_) => todo!(),
-        markdown::mdast::Node::MdxJsxFlowElement(_) => todo!(),
-        markdown::mdast::Node::MdxJsxTextElement(_) => todo!(),
-        markdown::mdast::Node::MdxTextExpression(_) => todo!(),
-        markdown::mdast::Node::FootnoteReference(_) => todo!(),
-        markdown::mdast::Node::Html(node) => html! {
-            (PreEscaped(node.value.clone()))
-        },
-        markdown::mdast::Node::Image(_) => todo!(),
-        markdown::mdast::Node::ImageReference(_) => todo!(),
-        markdown::mdast::Node::Link(link) => {
-            // TODO: constify
-            let re = regex::Regex::new("[\\w\\d]+").expect("compiling regex");
-
-            let text = html! {
-                @for node in &link.children {
-                    (node_to_html(node))
-                }
-            };
-
-            let css = "text-sky-600 hover:underline font-semibold";
-
-            if re.is_match(&link.url) {
-                html! {
-                    a href="#" class=(css)
-                    hx-get={ "/f/" (link.url) }
+            MdTag::Emphasis => html! {
+                em class="italic" { (render_children(children)) }
+            },
+            MdTag::Strong => html! {
+                strong class="font-bold" { (render_children(children)) }
+            },
+            MdTag::Strikethrough => html! {
+                del class="line-through" { (render_children(children)) }
+            },
+            MdTag::WikiLink(url) => html! {
+                a href="#" class="text-sky-600 hover:underline font-semibold"
+                    hx-get={ "/f/" (url) }
                     hx-target="#note-content"
-                    hx-push-url="true" { (text) }
+                    hx-push-url="true"
+                { (render_children(children)) }
+            },
+            MdTag::ExternalLink(url) => html! {
+                a href=(url) class="text-sky-600 hover:underline font-semibold" {
+                    (render_children(children))
                 }
-            } else {
+            },
+            MdTag::Table => {
+                let mut head = html! {};
+                let mut body_rows = Vec::new();
+                for child in children {
+                    if matches!(child, MdNode::Element(MdTag::TableHead, _)) {
+                        head = render_node(child);
+                    } else {
+                        body_rows.push(child);
+                    }
+                }
                 html! {
-                    a href=(link.url) class=(css) { (text) }
-                }
-            }
-        }
-        markdown::mdast::Node::LinkReference(_) => todo!(),
-        markdown::mdast::Node::Strong(strong) => html! {
-            strong class="font-bold" {
-                @for node in &strong.children {
-                    (node_to_html(node))
-                }
-            }
-        },
-        markdown::mdast::Node::Text(text) => html! {
-            (text_to_html(text))
-        },
-        markdown::mdast::Node::Code(code) => html! {
-            pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded my-6 overflow-x-auto font-mono text-sm leading-relaxed" {
-                (code.value)
-            }
-        },
-        markdown::mdast::Node::Math(_) => todo!(),
-        markdown::mdast::Node::Heading(heading) => {
-            let children = html! {
-                @for node in &heading.children {
-                    (node_to_html(node))
-                }
-            };
-
-            match heading.depth {
-                1 => html! { h1 class="text-lg font-bold mt-8 mb-4" { (children) } },
-                2 => html! { h2 class="text-base font-bold mt-6 mb-3" { (children) } },
-                3 => html! { h3 class="text-base font-semibold mt-5 mb-2" { (children) } },
-                4 => html! { h4 class="text-sm font-semibold mt-4 mb-2 uppercase tracking-wide" { (children) } },
-                5 => html! { h5 class="text-sm font-medium mt-3 mb-1" { (children) } },
-                _ => html! { h6 class="text-sm font-medium mt-3 mb-1 text-gray-500 dark:text-gray-400" { (children) } },
-            }
-        }
-        markdown::mdast::Node::ThematicBreak(_) => html! {
-            hr class="my-8 border-gray-200 dark:border-gray-700" {}
-        },
-        markdown::mdast::Node::Table(table) => {
-            let mut rows = table.children.iter();
-            let head = rows.next();
-            html! {
-                table class="border-collapse my-6 w-full text-sm" {
-                    @if let Some(markdown::mdast::Node::TableRow(row)) = head {
-                        thead {
-                            tr class="border-b-2 border-gray-300 dark:border-gray-600" {
-                                @for cell in &row.children {
-                                    @if let markdown::mdast::Node::TableCell(cell) = cell {
-                                        th class="px-3 py-2 text-left font-semibold" {
-                                            @for node in &cell.children {
-                                                (node_to_html(node))
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    tbody {
-                        @for row_node in rows {
-                            @if let markdown::mdast::Node::TableRow(row) = row_node {
-                                tr class="border-b border-gray-200 dark:border-gray-700" {
-                                    @for cell in &row.children {
-                                        @if let markdown::mdast::Node::TableCell(cell) = cell {
-                                            td class="px-3 py-2" {
-                                                @for node in &cell.children {
-                                                    (node_to_html(node))
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+                    table class="border-collapse my-6 w-full text-sm" {
+                        (head)
+                        tbody {
+                            @for row in body_rows {
+                                (render_node(row))
                             }
                         }
                     }
                 }
             }
-        }
-        markdown::mdast::Node::TableRow(row) => html! {
-            tr class="border-b border-gray-200 dark:border-gray-700" {
-                @for node in &row.children {
-                    (node_to_html(node))
+            MdTag::TableHead => html! {
+                thead {
+                    tr class="border-b-2 border-gray-300 dark:border-gray-600" {
+                        (render_children(children))
+                    }
                 }
+            },
+            MdTag::TableRow => html! {
+                tr class="border-b border-gray-200 dark:border-gray-700" {
+                    (render_children(children))
+                }
+            },
+            MdTag::TableHeadCell => html! {
+                th class="px-3 py-2 text-left font-semibold" { (render_children(children)) }
+            },
+            MdTag::TableBodyCell => html! {
+                td class="px-3 py-2" { (render_children(children)) }
+            },
+            MdTag::Image { url, title } => {
+                let alt = collect_text(children);
+                let title = if title.is_empty() {
+                    None
+                } else {
+                    Some(title.as_str())
+                };
+                html! { img src=(url) alt=(alt) title=[title]; }
             }
         },
-        markdown::mdast::Node::TableCell(cell) => html! {
-            td class="px-3 py-2" {
-                @for node in &cell.children {
-                    (node_to_html(node))
-                }
+        MdNode::Text(t) => text_to_html(t),
+        MdNode::Plain(t) => html! { (t) },
+        MdNode::InlineCode(c) => html! {
+            code class="bg-gray-100 dark:bg-gray-900 px-1.5 py-0.5 rounded text-[0.875em] font-mono" {
+                (c)
             }
         },
-        markdown::mdast::Node::Definition(_) => todo!(),
-        markdown::mdast::Node::Paragraph(paragraph) => html! {
-            p class="my-4 leading-relaxed" {
-                @for node in &paragraph.children {
-                    (node_to_html(node))
-                }
-            }
-        },
+        MdNode::RawHtml(h) => PreEscaped(h.clone()),
+        MdNode::SoftBreak => PreEscaped("\n".to_owned()),
+        MdNode::HardBreak => html! { br; },
+        MdNode::Rule => html! { hr class="my-8 border-gray-200 dark:border-gray-700"; },
     }
 }
 
 pub fn markdown_to_html(source: &str) -> Markup {
-    let mut options = markdown::ParseOptions::default();
-    options.constructs.gfm_table = true;
-    let root = markdown::to_mdast(source, &options).expect("parsing markdown");
+    let mut options = Options::empty();
+    options.insert(Options::ENABLE_TABLES);
+    options.insert(Options::ENABLE_STRIKETHROUGH);
+    options.insert(Options::ENABLE_SMART_PUNCTUATION);
+
+    let parser = Parser::new_ext(source, options);
+    let tree = build_tree(parser);
 
     html! {
-        div {
-            (node_to_html(&root))
-        }
+        div { (render_node(&tree)) }
     }
 }
