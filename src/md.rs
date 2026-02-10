@@ -112,7 +112,7 @@ fn node_to_html(node: &markdown::mdast::Node) -> Markup {
             }
         },
         markdown::mdast::Node::Blockquote(blockquote) => html! {
-            blockquote class="border-s-4 border-blue-600 bg-blue-50 p-4 rounded my-4 italic text-gray-700" {
+            blockquote class="border-s-4 border-blue-600 bg-blue-50 dark:bg-blue-950 p-4 rounded my-4 italic text-gray-700 dark:text-gray-300" {
                 @for node in &blockquote.children {
                     (node_to_html(node))
                 }
@@ -121,18 +121,18 @@ fn node_to_html(node: &markdown::mdast::Node) -> Markup {
         markdown::mdast::Node::FootnoteDefinition(_) => todo!(),
         markdown::mdast::Node::List(list) => html! {
             @if list.ordered {
-                ol {
+                ol class="my-4 leading-relaxed" {
                     @for node in &list.children {
-                        li class="list-decimal ml-6 my-2" {
+                        li class="list-decimal ml-6 my-1" {
                             (node_to_html(node))
                         }
                     }
                 }
             }
             @else {
-                ul {
+                ul class="my-4 leading-relaxed" {
                     @for node in &list.children {
-                        li class="list-disc ml-6 my-2" {
+                        li class="list-disc ml-6 my-1" {
                             (node_to_html(node))
                         }
                     }
@@ -148,7 +148,7 @@ fn node_to_html(node: &markdown::mdast::Node) -> Markup {
         markdown::mdast::Node::Yaml(_) => todo!(),
         markdown::mdast::Node::Break(_) => todo!(),
         markdown::mdast::Node::InlineCode(code) => html! {
-            code class="bg-gray-100 dark:bg-gray-900 p-1 rounded font-mono" {
+            code class="bg-gray-100 dark:bg-gray-900 px-1.5 py-0.5 rounded text-[0.875em] font-mono" {
                 (code.value)
             }
         },
@@ -215,7 +215,7 @@ fn node_to_html(node: &markdown::mdast::Node) -> Markup {
             (text_to_html(text))
         },
         markdown::mdast::Node::Code(code) => html! {
-            pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded my-4 overflow-x-auto font-mono" {
+            pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded my-6 overflow-x-auto font-mono text-sm leading-relaxed" {
                 (code.value)
             }
         },
@@ -228,33 +228,66 @@ fn node_to_html(node: &markdown::mdast::Node) -> Markup {
             };
 
             match heading.depth {
-                1 => html! { h1 class="font-semibold mb-4" { (children) } },
-                2 => html! { h2 class="font-semibold mb-4" { (children) } },
-                3 => html! { h3 class="font-semibold mb-4" { (children) } },
-                4 => html! { h4 class="font-semibold mb-4" { (children) } },
-                5 => html! { h5 class="font-semibold mb-4" { (children) } },
-                _ => html! { h6 class="font-semibold mb-4" { (children) } },
+                1 => html! { h1 class="text-lg font-bold mt-8 mb-4" { (children) } },
+                2 => html! { h2 class="text-base font-bold mt-6 mb-3" { (children) } },
+                3 => html! { h3 class="text-base font-semibold mt-5 mb-2" { (children) } },
+                4 => html! { h4 class="text-sm font-semibold mt-4 mb-2 uppercase tracking-wide" { (children) } },
+                5 => html! { h5 class="text-sm font-medium mt-3 mb-1" { (children) } },
+                _ => html! { h6 class="text-sm font-medium mt-3 mb-1 text-gray-500 dark:text-gray-400" { (children) } },
             }
         }
         markdown::mdast::Node::ThematicBreak(_) => html! {
-            hr class="m-4" {}
+            hr class="my-8 border-gray-200 dark:border-gray-700" {}
         },
-        markdown::mdast::Node::Table(table) => html! {
-            table class="border-collapse my-4 w-full" {
-                @for node in &table.children {
-                    (node_to_html(node))
+        markdown::mdast::Node::Table(table) => {
+            let mut rows = table.children.iter();
+            let head = rows.next();
+            html! {
+                table class="border-collapse my-6 w-full text-sm" {
+                    @if let Some(markdown::mdast::Node::TableRow(row)) = head {
+                        thead {
+                            tr class="border-b-2 border-gray-300 dark:border-gray-600" {
+                                @for cell in &row.children {
+                                    @if let markdown::mdast::Node::TableCell(cell) = cell {
+                                        th class="px-3 py-2 text-left font-semibold" {
+                                            @for node in &cell.children {
+                                                (node_to_html(node))
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    tbody {
+                        @for row_node in rows {
+                            @if let markdown::mdast::Node::TableRow(row) = row_node {
+                                tr class="border-b border-gray-200 dark:border-gray-700" {
+                                    @for cell in &row.children {
+                                        @if let markdown::mdast::Node::TableCell(cell) = cell {
+                                            td class="px-3 py-2" {
+                                                @for node in &cell.children {
+                                                    (node_to_html(node))
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
-        },
+        }
         markdown::mdast::Node::TableRow(row) => html! {
-            tr {
+            tr class="border-b border-gray-200 dark:border-gray-700" {
                 @for node in &row.children {
                     (node_to_html(node))
                 }
             }
         },
         markdown::mdast::Node::TableCell(cell) => html! {
-            td {
+            td class="px-3 py-2" {
                 @for node in &cell.children {
                     (node_to_html(node))
                 }

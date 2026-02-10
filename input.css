@@ -1,7 +1,33 @@
 @import "tailwindcss";
 
+/* Remove top margin from first element in note body */
 .prose > :first-child > :first-child {
   margin-top: 0;
+}
+
+/* Prevent prose defaults from overriding heading sizes */
+.prose :where(h1, h2, h3, h4, h5, h6) {
+  font-size: inherit;
+  line-height: inherit;
+}
+
+/* Links: no default underline, underline on hover only */
+.prose :where(a) {
+  text-decoration: none;
+}
+
+/* Tighten spacing inside blockquotes */
+.prose :where(blockquote) > :first-child {
+  margin-top: 0;
+}
+.prose :where(blockquote) > :last-child {
+  margin-bottom: 0;
+}
+
+/* Tighten spacing inside list items */
+.prose :where(li) > p {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
 }
 
 @media (max-width: 767px) {
