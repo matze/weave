@@ -58,7 +58,7 @@ pub(crate) async fn note(
                 }
 
                 div class="flex-grow px-4 pt-6 pb-4 overflow-y-auto" {
-                    div class="prose max-w-none dark:prose-invert" {
+                    div class="prose dark:prose-invert" {
                         (tokio::task::spawn_blocking(move || md::markdown_to_html(&body))
                             .await
                             .expect("join working"))

@@ -40,7 +40,7 @@ fn edit_form(stem: &str, body: &str) -> Markup {
             }
 
             div id="preview-area" class="hidden flex-grow px-4 pt-6 pb-4 overflow-y-auto" {
-                div id="preview-content" class="prose max-w-none dark:prose-invert" {}
+                div id="preview-content" class="prose dark:prose-invert" {}
             }
         }
     }
@@ -116,7 +116,7 @@ pub(crate) async fn save(
         }
 
         div class="flex-grow px-4 pt-6 pb-4 overflow-y-auto" {
-            div class="prose max-w-none dark:prose-invert" {
+            div class="prose dark:prose-invert" {
                 (tokio::task::spawn_blocking(move || md::markdown_to_html(&note.body))
                     .await
                     .expect("join working"))

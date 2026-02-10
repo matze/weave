@@ -20,7 +20,7 @@ pub(crate) fn layout<'a>(
         (DOCTYPE)
         html lang="en" {
             (partials::head::head())
-            body class="flex flex-col md:flex-row h-screen bg-white dark:bg-gray-800 text-black dark:text-white" {
+            body class="font-sans flex flex-col md:flex-row h-screen bg-white dark:bg-gray-800 text-black dark:text-white" {
                 div id="sidebar" class="w-full md:w-80 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-y-auto flex-shrink-0 h-screen md:h-auto" {
                     div class="p-4 border-b border-gray-200 dark:border-gray-700" {
                         div class="flex" {
