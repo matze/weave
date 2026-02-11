@@ -32,6 +32,13 @@ pub(crate) fn head() -> Markup {
                         document.getElementById('filter-input').focus();
                     }
                 });
+                window.addEventListener('popstate', function(e) {
+                    var sidebar = document.getElementById('sidebar');
+                    if (sidebar && sidebar.classList.contains('mobile-hidden')) {
+                        showSidebar();
+                        e.stopImmediatePropagation();
+                    }
+                }, true);
                 "#))
             }
         }
