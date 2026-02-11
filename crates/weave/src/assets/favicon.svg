@@ -8,7 +8,7 @@
    version="1.1"
    id="svg1"
    inkscape:version="1.4.2 (ebf0e940d0, 2025-05-08)"
-   sodipodi:docname="favicion.svg"
+   sodipodi:docname="favicon.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -74,7 +74,7 @@
        xlink:href="#linearGradient5"
        id="linearGradient4"
        gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(1.4889881,0,0,1.4889881,-8.4536059,-8.945672)"
+       gradientTransform="matrix(1.4137769,0,0,1.4137769,-5.392388,-6.1437564)"
        x1="6.9807682"
        y1="16.640426"
        x2="28.315174"
@@ -97,10 +97,10 @@
          y="12.771634" /></text>
     <g
        id="g6"
-       transform="translate(-0.07372442,1.1016296)">
+       transform="translate(-1.1196689,0.56092057)">
       <g
          id="g5"
-         transform="matrix(1.2799351,0,0,1.2799351,-4.8243197,-6.9187687)">
+         transform="matrix(1.2152835,0,0,1.2152835,-3.4048306,-4.2192353)">
         <text
            xml:space="preserve"
            style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:26.2913px;line-height:1.25;font-family:'Archivo Black';-inkscape-font-specification:'Archivo Black, ';letter-spacing:0px;word-spacing:0px;fill:url(#linearGradient3);stroke-width:0.657283"
@@ -115,15 +115,15 @@
       </g>
       <text
          xml:space="preserve"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:33.6512px;line-height:1.25;font-family:'Archivo Black';-inkscape-font-specification:'Archivo Black, ';letter-spacing:0px;word-spacing:0px;fill:url(#linearGradient4);stroke-width:0.841279"
-         x="1.9406726"
-         y="24.715618"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:31.9514px;line-height:1.25;font-family:'Archivo Black';-inkscape-font-specification:'Archivo Black, ';letter-spacing:0px;word-spacing:0px;fill:url(#linearGradient4);stroke-width:0.798785"
+         x="4.4768591"
+         y="25.817247"
          id="text4"><tspan
            sodipodi:role="line"
            id="tspan4"
-           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Archivo Black';-inkscape-font-specification:'Archivo Black, ';fill:url(#linearGradient4);stroke-width:0.841279"
-           x="1.9406726"
-           y="24.715618">w</tspan></text>
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Archivo Black';-inkscape-font-specification:'Archivo Black, ';fill:url(#linearGradient4);stroke-width:0.798785"
+           x="4.4768591"
+           y="25.817247">w</tspan></text>
     </g>
   </g>
 </svg>
