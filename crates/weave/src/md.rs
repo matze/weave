@@ -1,11 +1,13 @@
 //! Render Markdown as HTML.
 
-use std::sync::LazyLock;
+use std::collections::HashMap;
+use std::hash::{DefaultHasher, Hash, Hasher};
+use std::sync::{LazyLock, RwLock};
 
 use maud::{Markup, PreEscaped, html};
-use pulldown_cmark::{Event, Options, Parser, Tag as CmarkTag};
-
-// ── Text segmentation (unchanged) ──────────────────────────────────
+use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag as CmarkTag};
+use syntect::html::{ClassStyle, ClassedHTMLGenerator, css_for_theme_with_class_style};
+use syntect::parsing::SyntaxSet;
 
 #[derive(Debug, Clone, Copy)]
 enum Segment<'a> {
@@ -85,14 +87,12 @@ impl<'a> Iterator for Splitter<'a> {
     }
 }
 
-// ── Tree ────────────────────────────────────────────────────────────
-
 enum MdTag {
     Root,
     Paragraph,
     Heading(u8),
     BlockQuote,
-    CodeBlock,
+    CodeBlock(Option<String>),
     OrderedList,
     UnorderedList,
     ListItem { ordered: bool },
@@ -135,7 +135,15 @@ fn build_tree(parser: Parser) -> MdNode {
                     CmarkTag::Paragraph => MdTag::Paragraph,
                     CmarkTag::Heading { level, .. } => MdTag::Heading(level as u8),
                     CmarkTag::BlockQuote(_) => MdTag::BlockQuote,
-                    CmarkTag::CodeBlock(_) => MdTag::CodeBlock,
+                    CmarkTag::CodeBlock(kind) => {
+                        let lang = match kind {
+                            CodeBlockKind::Fenced(lang) if !lang.is_empty() => {
+                                Some(lang.to_string())
+                            }
+                            _ => None,
+                        };
+                        MdTag::CodeBlock(lang)
+                    }
                     CmarkTag::List(Some(_)) => MdTag::OrderedList,
                     CmarkTag::List(None) => MdTag::UnorderedList,
                     CmarkTag::Item => {
@@ -190,7 +198,7 @@ fn build_tree(parser: Parser) -> MdNode {
             Event::Text(t) => {
                 let suppress_splitter = stack
                     .iter()
-                    .any(|(tag, _)| matches!(tag, MdTag::CodeBlock | MdTag::WikiLink(_)));
+                    .any(|(tag, _)| matches!(tag, MdTag::CodeBlock(_) | MdTag::WikiLink(_)));
                 let node = if suppress_splitter {
                     MdNode::Plain(t.to_string())
                 } else {
@@ -315,11 +323,22 @@ fn render_node(node: &MdNode) -> Markup {
                     (render_children(children))
                 }
             },
-            MdTag::CodeBlock => html! {
-                pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded my-6 overflow-x-auto font-mono text-sm leading-relaxed" {
-                    (render_children(children))
+            MdTag::CodeBlock(lang) => {
+                let code = collect_text(children);
+                let pre_class = "bg-gray-100 dark:bg-gray-900 p-4 rounded my-6 overflow-x-auto font-mono text-sm leading-relaxed";
+                match highlight_code(&code, lang.as_deref()) {
+                    Some(highlighted) => html! {
+                        pre class=(pre_class) {
+                            code { (PreEscaped(highlighted)) }
+                        }
+                    },
+                    None => html! {
+                        pre class=(pre_class) {
+                            code { (code) }
+                        }
+                    },
                 }
-            },
+            }
             MdTag::OrderedList => html! {
                 ol class="my-4 leading-relaxed" { (render_children(children)) }
             },
@@ -416,6 +435,72 @@ fn render_node(node: &MdNode) -> Markup {
         MdNode::HardBreak => html! { br; },
         MdNode::Rule => html! { hr class="my-8 border-gray-200 dark:border-gray-700"; },
     }
+}
+
+static SYNTAX_SET: LazyLock<SyntaxSet> = LazyLock::new(two_face::syntax::extra_newlines);
+
+static THEME_SET: LazyLock<two_face::theme::EmbeddedLazyThemeSet> =
+    LazyLock::new(two_face::theme::extra);
+
+static HIGHLIGHT_CACHE: LazyLock<RwLock<HashMap<u64, String>>> =
+    LazyLock::new(|| RwLock::new(HashMap::new()));
+
+fn highlight_code(source: &str, lang: Option<&str>) -> Option<String> {
+    let lang = lang?;
+    let syntax = SYNTAX_SET.find_syntax_by_token(lang)?;
+
+    let mut hasher = DefaultHasher::new();
+    lang.hash(&mut hasher);
+    source.hash(&mut hasher);
+    let key = hasher.finish();
+
+    if let Some(cached) = HIGHLIGHT_CACHE.read().unwrap().get(&key) {
+        return Some(cached.clone());
+    }
+
+    let mut generator = ClassedHTMLGenerator::new_with_class_style(
+        syntax,
+        &SYNTAX_SET,
+        ClassStyle::SpacedPrefixed { prefix: "hl-" },
+    );
+
+    for line in syntect::util::LinesWithEndings::from(source) {
+        generator
+            .parse_html_for_line_which_includes_newline(line)
+            .ok()?;
+    }
+
+    let html = generator.finalize();
+
+    HIGHLIGHT_CACHE.write().unwrap().insert(key, html.clone());
+
+    Some(html)
+}
+
+/// Returns CSS for syntax highlighting with light and dark theme support.
+pub fn highlight_css() -> &'static str {
+    static CSS: LazyLock<String> = LazyLock::new(|| {
+        let class_style = ClassStyle::SpacedPrefixed { prefix: "hl-" };
+
+        let light_theme = THEME_SET.get(two_face::theme::EmbeddedThemeName::InspiredGithub);
+        let light_css = css_for_theme_with_class_style(light_theme, class_style).unwrap();
+        // Strip background-color rules, Tailwind handles backgrounds.
+        let light_css = strip_background_color(&light_css);
+
+        let dark_theme = THEME_SET.get(two_face::theme::EmbeddedThemeName::Nord);
+        let dark_css = css_for_theme_with_class_style(dark_theme, class_style).unwrap();
+        let dark_css = strip_background_color(&dark_css);
+
+        format!("{light_css}\n@media (prefers-color-scheme: dark) {{\n{dark_css}\n}}\n")
+    });
+    &CSS
+}
+
+fn strip_background_color(css: &str) -> String {
+    css.lines()
+        .filter(|line| !line.contains("background-color"))
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 pub fn markdown_to_html(source: &str) -> Markup {

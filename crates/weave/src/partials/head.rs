@@ -1,4 +1,6 @@
-use maud::{Markup, html};
+use maud::{Markup, PreEscaped, html};
+
+use crate::md;
 
 pub(crate) fn head() -> Markup {
     html! {
@@ -7,6 +9,7 @@ pub(crate) fn head() -> Markup {
             meta name="viewport" content="width=device-width, initial-scale=1.0";
             link rel="stylesheet" type="text/css" href="/app.css";
             link rel="shortcut icon" type="image/svg+xml" href="/favicon.svg";
+            style { (PreEscaped(md::highlight_css())) }
             title {"weave"};
             script {
                 (maud::PreEscaped(r#"
