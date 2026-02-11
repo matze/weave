@@ -34,7 +34,7 @@ pub(crate) fn back() -> Markup {
 
 pub(crate) fn pencil() -> Markup {
     html! {
-        svg class="w-5 h-5 text-gray-400 dark:text-white hover:text-gray-600 dark:hover:text-gray-200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {
+        svg class="w-4 h-4 text-gray-400 dark:text-white hover:text-gray-600 dark:hover:text-gray-200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {
             path stroke="currentColor" d="M22.94,1.061c-1.368-1.367-3.76-1.365-5.124,0L0,18.876v5.124H5.124L22.94,6.184c.684-.684,1.06-1.593,1.06-2.562s-.376-1.878-1.06-2.562ZM4.71,23H1v-3.71L15.292,4.999l3.709,3.709L4.71,23ZM22.233,5.477l-2.525,2.525-3.709-3.709,2.525-2.525c.986-.988,2.718-.99,3.709,0,.495,.495,.767,1.153,.767,1.854s-.272,1.359-.767,1.854Z" {}
         }
     }
