@@ -246,6 +246,7 @@ fn text_to_html(text: &str) -> Markup {
                         hx-vals={ "{\"query\": \"" (tag) "\"}" }
                         hx-target="#search-list"
                         hx-on-htmx-after-request="document.querySelector('input[name=query]').value = this.getAttribute('data-tag');document.getElementById('filter-clear').classList.remove('hidden')"
+                        onclick="showSidebar()"
                         data-tag=(tag)
                     {
                         (tag)
@@ -260,6 +261,7 @@ fn text_to_html(text: &str) -> Markup {
                             hx-vals={ "{\"query\": \"#" (tag_name) "\"}" }
                             hx-target="#search-list"
                             hx-on-htmx-after-request="document.querySelector('input[name=query]').value = this.getAttribute('data-tag');document.getElementById('filter-clear').classList.remove('hidden')"
+                            onclick="showSidebar()"
                             data-tag={ "#" (tag_name) }
                         {
                             (tag_name)
