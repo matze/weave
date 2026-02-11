@@ -17,7 +17,7 @@ use axum::routing::{get, post};
 use axum_extra::extract::SignedCookieJar;
 use axum_extra::extract::cookie::{Cookie, Key};
 use futures_concurrency::future::Join;
-use notify::event::{AccessKind, AccessMode};
+use notify::event::{AccessKind, AccessMode, ModifyKind};
 use notify::{EventKind, Watcher};
 use serde::Deserialize;
 
@@ -88,6 +88,8 @@ async fn watch(notebook: Notebook) -> Result<()> {
                 && matches!(
                     kind,
                     EventKind::Access(AccessKind::Close(AccessMode::Write))
+                        | EventKind::Create(_)
+                        | EventKind::Modify(ModifyKind::Name(_))
                 )
             {
                 for path in paths.into_iter() {
