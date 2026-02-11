@@ -18,6 +18,17 @@ pub(crate) fn head() -> Markup {
                     document.getElementById('sidebar').classList.remove('mobile-hidden');
                     document.getElementById('note-content').classList.remove('mobile-visible');
                 }
+                document.addEventListener('keydown', function(e) {
+                    var t = document.activeElement.tagName;
+                    if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return;
+                    if (e.key === 'e') {
+                        var btn = document.querySelector('[aria-label="Edit note"]');
+                        if (btn) btn.click();
+                    } else if (e.key === 'f') {
+                        e.preventDefault();
+                        document.getElementById('filter-input').focus();
+                    }
+                });
                 "#))
             }
         }
