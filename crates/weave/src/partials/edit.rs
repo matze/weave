@@ -5,6 +5,8 @@ use maud::{Markup, html};
 use crate::extract::Authenticated;
 use crate::{Notebook, assets, md};
 
+const HX_TRIGGER: axum::http::HeaderName = axum::http::HeaderName::from_static("hx-trigger");
+
 fn edit_form(stem: &str, body: &str) -> Markup {
     html! {
         div class="flex flex-col h-full" {
@@ -71,7 +73,7 @@ pub(crate) async fn save(
     Authenticated(authenticated): Authenticated,
     Path(stem): Path<String>,
     axum::extract::Form(Body { body }): axum::extract::Form<Body>,
-) -> Result<Markup, StatusCode> {
+) -> Result<([(axum::http::HeaderName, &'static str); 1], Markup), StatusCode> {
     if !authenticated {
         return Err(StatusCode::FORBIDDEN);
     }
@@ -96,7 +98,7 @@ pub(crate) async fn save(
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)??;
 
-    Ok(html! {
+    Ok(([(HX_TRIGGER, "notes-updated")], html! {
         div class="p-4 border-b border-gray-200 dark:border-gray-700" {
             div class="flex items-center gap-3" {
                 button
@@ -123,7 +125,7 @@ pub(crate) async fn save(
                     .expect("join working"))
             }
         }
-    })
+    }))
 }
 
 pub(crate) async fn preview(
