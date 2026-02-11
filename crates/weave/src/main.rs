@@ -6,6 +6,7 @@ mod pages;
 mod partials;
 mod zk;
 
+use std::net::{Ipv4Addr, SocketAddr};
 use std::sync::{Arc, Mutex, mpsc};
 
 use anyhow::Result;
@@ -125,6 +126,12 @@ async fn main() -> Result<()> {
         tracing::warn!("no password set, login is effectively disabled");
     }
 
+    let port = std::env::var("WEAVE_PORT")
+        .ok()
+        .map(|port| port.parse::<u16>())
+        .transpose()?
+        .unwrap_or(8000);
+
     let notebook = zk::Notebook::load()?;
     let issuer = jwt::Issuer::new()?;
     let key = Key::generate();
@@ -153,8 +160,9 @@ async fn main() -> Result<()> {
         .route("/htmx.2.0.4.min.js", get(assets::htmx_js))
         .with_state(state);
 
-    tracing::info!("serving on localhost:8000");
-    let listener = tokio::net::TcpListener::bind("localhost:8000").await?;
+    let addr = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), port);
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    tracing::info!("serving on {addr:?}");
     let _ = (watch(notebook), axum::serve(listener, app)).join().await;
 
     Ok(())
