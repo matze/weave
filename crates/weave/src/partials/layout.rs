@@ -11,9 +11,9 @@ pub(crate) fn layout<'a>(
     note_content: Option<Markup>,
 ) -> Markup {
     let icon = if authenticated {
-        assets::icons::unlocked()
+        assets::icons::sign_out()
     } else {
-        assets::icons::locked()
+        assets::icons::sign_in()
     };
 
     html! {
@@ -51,8 +51,9 @@ pub(crate) fn layout<'a>(
 
                             button #filter-clear type="button"
                                 class="absolute cursor-pointer right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hidden"
-                                onclick="let i=document.getElementById('filter-input');i.value='';htmx.ajax('POST','/f/search',{target:'#search-list',values:{query:''}});this.classList.add('hidden')"
-                                { "✕" }
+                                onclick="let i=document.getElementById('filter-input');i.value='';htmx.ajax('POST','/f/search',{target:'#search-list',values:{query:''}});this.classList.add('hidden')" {
+                                    (assets::icons::cancel())
+                                }
                         }
                         script {
                             (maud::PreEscaped("document.getElementById('filter-input').addEventListener('input',function(){document.getElementById('filter-clear').classList.toggle('hidden',!this.value)})"))

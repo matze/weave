@@ -35,7 +35,7 @@ pub(crate) async fn note(
                     h2 class="text-xl font-bold dark:text-white" { (note.title()) }
                     @if authenticated {
                         button
-                            class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-pointer"
+                            class="cursor-pointer"
                             hx-get={ "/f/" (stem) "/edit" }
                             hx-target="#note-content"
                             aria-label="Edit note" {
