@@ -11,6 +11,7 @@ use pulldown_cmark::{Event, Options, Parser, Tag as CmarkTag};
 enum Segment<'a> {
     Text(&'a str),
     Tag(&'a str),
+    ColonTags(&'a str),
     Url(&'a str),
 }
 
@@ -28,18 +29,22 @@ impl<'a> Splitter<'a> {
         start: usize,
     ) -> Option<(usize, usize, Segment<'a>)> {
         let caps = re.captures_at(text, start)?;
-        let m = caps.get(0).unwrap();
-        let segment = if caps.name("tag").is_some() {
-            Segment::Tag(m.as_str())
+        if let Some(m) = caps.name("colontags") {
+            Some((m.start(), m.end(), Segment::ColonTags(m.as_str())))
         } else {
-            Segment::Url(m.as_str())
-        };
-        Some((m.start(), m.end(), segment))
+            let m = caps.get(0).unwrap();
+            let segment = if caps.name("tag").is_some() {
+                Segment::Tag(m.as_str())
+            } else {
+                Segment::Url(m.as_str())
+            };
+            Some((m.start(), m.end(), segment))
+        }
     }
 
     fn new(text: &'a str) -> Self {
         // TODO: constify
-        let re = regex::Regex::new(r#"(?P<tag>#[\w]+)|(?P<url>https?://[^\s<>]+)"#)
+        let re = regex::Regex::new(r#"(?m)(?P<tag>#[\w]+)|(?P<url>https?://[^\s<>]+)|(?:(?:^|\s)(?P<colontags>:[\w-]+(?::[\w-]+)*:))"#)
             .expect("compiling regex");
         let next = Self::next_match(&re, text, 0);
         Self {
@@ -236,6 +241,22 @@ fn text_to_html(text: &str) -> Markup {
                         data-tag=(tag)
                     {
                         (tag)
+                    }
+                },
+                Segment::ColonTags(raw) => {
+                    ":"
+                    @for tag_name in raw.split(':').filter(|s| !s.is_empty()) {
+                        a href="#"
+                            class="text-sky-600 hover:underline"
+                            hx-post="/f/search"
+                            hx-vals={ "{\"query\": \"#" (tag_name) "\"}" }
+                            hx-target="#search-list"
+                            hx-on-htmx-after-request="document.querySelector('input[name=query]').value = this.getAttribute('data-tag');document.getElementById('filter-clear').classList.remove('hidden')"
+                            data-tag={ "#" (tag_name) }
+                        {
+                            (tag_name)
+                        }
+                        ":"
                     }
                 },
                 Segment::Url(url) => {
