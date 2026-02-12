@@ -35,6 +35,12 @@
   margin-bottom: 0.25rem;
 }
 
+/* Remove extra spacing on nested lists */
+.prose :where(li) > :where(ul, ol) {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
 @media (max-width: 767px) {
   #sidebar.mobile-hidden {
     display: none;
