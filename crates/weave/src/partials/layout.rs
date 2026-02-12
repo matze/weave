@@ -9,6 +9,7 @@ pub(crate) fn layout<'a>(
     authenticated: bool,
     notes: impl IntoIterator<Item = &'a Note>,
     note_content: Option<Markup>,
+    note_title: Option<&str>,
 ) -> Markup {
     let icon = if authenticated {
         assets::icons::sign_out()
@@ -19,7 +20,7 @@ pub(crate) fn layout<'a>(
     html! {
         (DOCTYPE)
         html lang="en" {
-            (partials::head::head())
+            (partials::head::head(note_title))
             body class="font-sans bg-gray-100 dark:bg-gray-900 text-black dark:text-white" {
               div class="max-w-7xl mx-auto flex flex-col md:flex-row h-screen bg-white dark:bg-gray-800" {
                 div id="sidebar" class="w-full md:w-80 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-y-auto flex-shrink-0 h-screen md:h-auto" {

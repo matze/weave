@@ -2,7 +2,7 @@ use maud::{Markup, PreEscaped, html};
 
 use crate::md;
 
-pub(crate) fn head() -> Markup {
+pub(crate) fn head(note_title: Option<&str>) -> Markup {
     html! {
         head {
             meta charset="utf-8";
@@ -10,7 +10,11 @@ pub(crate) fn head() -> Markup {
             link rel="stylesheet" type="text/css" href="/app.css";
             link rel="shortcut icon" type="image/svg+xml" href="/favicon.svg";
             style { (PreEscaped(md::highlight_css())) }
-            title {"weave"};
+            @if let Some(t) = note_title {
+                title { (t) " – weave" }
+            } @else {
+                title { "weave" }
+            }
             script {
                 (maud::PreEscaped(r#"
                 function showNote() {
@@ -39,6 +43,12 @@ pub(crate) fn head() -> Markup {
                         e.stopImmediatePropagation();
                     }
                 }, true);
+                document.addEventListener('htmx:afterSettle', function(e) {
+                    if (e.detail.target.id === 'note-content') {
+                        var h2 = document.querySelector('#note-content h2');
+                        document.title = h2 ? h2.textContent + ' \u2013 weave' : 'weave';
+                    }
+                });
                 "#))
             }
         }

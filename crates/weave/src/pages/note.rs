@@ -25,6 +25,7 @@ pub(crate) async fn note(
     };
 
     // Render note content
+    let note_title = note_data.as_ref().map(|(title, _, _)| title.clone());
     let note_content = if let Some((title, body, is_public)) = note_data {
         if !authenticated && !is_public {
             html! {
@@ -76,5 +77,5 @@ pub(crate) async fn note(
         }
     };
 
-    partials::layout::layout(authenticated, &notes, Some(note_content))
+    partials::layout::layout(authenticated, &notes, Some(note_content), note_title.as_deref())
 }

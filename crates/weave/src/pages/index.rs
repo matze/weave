@@ -12,5 +12,5 @@ pub(crate) async fn index(
     let tag_filter = (!authenticated).then_some("public");
     let notes = notebook.all_notes(tag_filter);
 
-    partials::layout::layout(authenticated, notes, None)
+    partials::layout::layout(authenticated, notes, None, None)
 }
