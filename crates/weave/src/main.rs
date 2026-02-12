@@ -107,7 +107,9 @@ async fn watch(notebook: Notebook) -> Result<()> {
             if let Some(stem) = path.file_stem().and_then(|name| name.to_str()) {
                 // TODO: we are locking the entire notebook while loading the new note. Perhaps
                 // decouple that.
-                notebook.lock().unwrap().reload(stem).unwrap();
+                if let Err(err) = notebook.lock().unwrap().reload(stem) {
+                    tracing::error!(?err, "failed to reload {stem}");
+                }
             }
         }
 
