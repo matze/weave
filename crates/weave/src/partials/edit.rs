@@ -91,9 +91,7 @@ pub(crate) async fn save(
             .reload(&stem_clone)
             .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-        notebook
-            .note(&stem_clone)
-            .ok_or_else(|| StatusCode::NOT_FOUND)
+        notebook.note(&stem_clone).ok_or(StatusCode::NOT_FOUND)
     })
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)??;

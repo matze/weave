@@ -4,7 +4,7 @@ use crate::partials;
 use crate::{Notebook, assets};
 
 /// Render the main page layout.
-pub(crate) fn layout<'a>(authenticated: bool, notebook: Notebook, content: Markup) -> Markup {
+pub(crate) fn layout(authenticated: bool, notebook: Notebook, content: Markup) -> Markup {
     let notebook = notebook.lock().unwrap();
     let notes = notebook.all_notes((!authenticated).then_some("public"));
 
