@@ -92,7 +92,7 @@ fn note_item(note: &Note) -> Markup {
                     p class=(snippet_class) { (note.snippet()) }
                 }
                 @if is_pinned {
-                    span class="ml-2 flex-shrink-0" { (icons::pin()) }
+                    span class="ml-2 mr-2 flex-shrink-0" { (icons::pin()) }
                 }
             }
         }
