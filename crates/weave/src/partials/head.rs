@@ -17,9 +17,31 @@ pub(crate) fn head(note_title: Option<&str>) -> Markup {
             }
             script {
                 (maud::PreEscaped(r#"
-                function showNote() {
+                function stemFromUrl() {
+                    var m = location.pathname.match(/^\/(note|f)\/(.+)/);
+                    return m ? decodeURIComponent(m[2]) : null;
+                }
+                function highlightActiveNote(scroll) {
+                    var stem = stemFromUrl();
+                    document.querySelectorAll('.note-item.active-note').forEach(function(el) {
+                        el.classList.remove('active-note');
+                    });
+                    if (!stem) return;
+                    var el = document.querySelector('.note-item[data-stem="' + CSS.escape(stem) + '"]');
+                    if (el) {
+                        el.classList.add('active-note');
+                        if (scroll) el.scrollIntoView({block: 'nearest'});
+                    }
+                }
+                function showNote(e) {
                     document.getElementById('sidebar').classList.add('mobile-hidden');
                     document.getElementById('note-content').classList.add('mobile-visible');
+                    if (e && e.currentTarget) {
+                        document.querySelectorAll('.note-item.active-note').forEach(function(el) {
+                            el.classList.remove('active-note');
+                        });
+                        e.currentTarget.classList.add('active-note');
+                    }
                 }
                 function showSidebar() {
                     document.getElementById('sidebar').classList.remove('mobile-hidden');
@@ -36,17 +58,25 @@ pub(crate) fn head(note_title: Option<&str>) -> Markup {
                         document.getElementById('filter-input').focus();
                     }
                 });
+                document.addEventListener('DOMContentLoaded', function() {
+                    highlightActiveNote(true);
+                });
                 window.addEventListener('popstate', function(e) {
                     var sidebar = document.getElementById('sidebar');
                     if (sidebar && sidebar.classList.contains('mobile-hidden')) {
                         showSidebar();
                         e.stopImmediatePropagation();
                     }
+                    highlightActiveNote(true);
                 }, true);
                 document.addEventListener('htmx:afterSettle', function(e) {
                     if (e.detail.target.id === 'note-content') {
                         var h2 = document.querySelector('#note-content h2');
                         document.title = h2 ? h2.textContent + ' \u2013 weave' : 'weave';
+                        highlightActiveNote(false);
+                    }
+                    if (e.detail.target.id === 'search-list') {
+                        highlightActiveNote(false);
                     }
                 });
                 "#))

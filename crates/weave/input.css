@@ -41,6 +41,16 @@
   margin-bottom: 0.25rem;
 }
 
+.note-item.active-note {
+  border-left-color: var(--color-blue-400);
+}
+
+@media (prefers-color-scheme: dark) {
+  .note-item.active-note {
+    border-left-color: var(--color-blue-400);
+  }
+}
+
 @media (max-width: 767px) {
   #sidebar.mobile-hidden {
     display: none;

@@ -81,11 +81,12 @@ fn note_item(note: &Note) -> Markup {
 
     html! {
         div
-            class="p-4 border-l-4 border-l-transparent border-b border-gray-200 dark:border-gray-700 dark:border-l-transparent cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 hover:border-l-blue-400 active:bg-gray-200 dark:active:bg-gray-600"
+            class="note-item p-4 border-l-4 border-l-transparent border-b border-gray-200 dark:border-gray-700 dark:border-l-transparent cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 hover:border-l-blue-400 active:bg-gray-200 dark:active:bg-gray-600"
+            data-stem=(note.filename_stem())
             hx-get={ "/f/" (note.filename_stem()) }
             hx-target="#note-content"
             hx-push-url={ "/note/" (note.filename_stem()) }
-            onclick="showNote()" {
+            onclick="showNote(event)" {
             div class="flex items-center justify-between" {
                 div {
                     h3 class=(title_class) { (note.title()) }
