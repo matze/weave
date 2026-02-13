@@ -49,7 +49,6 @@ pub(crate) fn note_list<'a>(notes: impl IntoIterator<Item = &'a zk::Note>) -> Ma
             @for note in &pinned {
                 (note_item(note))
             }
-            div class="border-t border-gray-300 dark:border-gray-600" {}
         }
 
         @for note in &regular {
@@ -57,7 +56,6 @@ pub(crate) fn note_list<'a>(notes: impl IntoIterator<Item = &'a zk::Note>) -> Ma
         }
 
         @if !archived.is_empty() {
-            div class="border-t border-gray-300 dark:border-gray-600" {}
             @for note in &archived {
                 (note_item(note))
             }
