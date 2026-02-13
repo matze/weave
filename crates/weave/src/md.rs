@@ -123,7 +123,7 @@ enum MdNode {
 }
 
 static WIKI_LINK_RE: LazyLock<regex::Regex> =
-    LazyLock::new(|| regex::Regex::new(r"^[\w\d]+$").expect("compiling regex"));
+    LazyLock::new(|| regex::Regex::new(r"^(?:\.{0,2}/)*(?P<stem>\w+)$").expect("compiling regex"));
 
 fn build_tree(parser: Parser) -> MdNode {
     let mut stack: Vec<(MdTag, Vec<MdNode>)> = vec![(MdTag::Root, Vec::new())];
@@ -157,8 +157,8 @@ fn build_tree(parser: Parser) -> MdNode {
                     CmarkTag::Strong => MdTag::Strong,
                     CmarkTag::Strikethrough => MdTag::Strikethrough,
                     CmarkTag::Link { dest_url, .. } => {
-                        if WIKI_LINK_RE.is_match(&dest_url) {
-                            MdTag::WikiLink(dest_url.to_string())
+                        if let Some(caps) = WIKI_LINK_RE.captures(&dest_url) {
+                            MdTag::WikiLink(caps["stem"].to_string())
                         } else {
                             MdTag::ExternalLink(dest_url.to_string())
                         }
@@ -516,5 +516,68 @@ pub fn markdown_to_html(source: &str) -> Markup {
 
     html! {
         div { (render_node(&tree)) }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn wiki_stem(url: &str) -> Option<String> {
+        WIKI_LINK_RE
+            .captures(url)
+            .map(|caps| caps["stem"].to_string())
+    }
+
+    #[test]
+    fn test_wiki_link_bare_stem() {
+        assert_eq!(wiki_stem("65bs"), Some("65bs".into()));
+    }
+
+    #[test]
+    fn test_wiki_link_relative_parent() {
+        assert_eq!(wiki_stem("../65bs"), Some("65bs".into()));
+    }
+
+    #[test]
+    fn test_wiki_link_relative_current() {
+        assert_eq!(wiki_stem("./65bs"), Some("65bs".into()));
+    }
+
+    #[test]
+    fn test_wiki_link_relative_deep() {
+        assert_eq!(wiki_stem("../../abc123"), Some("abc123".into()));
+    }
+
+    #[test]
+    fn test_wiki_link_rejects_url() {
+        assert_eq!(wiki_stem("https://example.com"), None);
+        assert_eq!(wiki_stem("http://example.com/foo"), None);
+    }
+
+    #[test]
+    fn test_wiki_link_rejects_extension() {
+        assert_eq!(wiki_stem("file.txt"), None);
+    }
+
+    #[test]
+    fn test_render_bare_wiki_link() {
+        let html = markdown_to_html("[note](abc1)").into_string();
+        assert!(html.contains(r#"hx-get="/f/abc1""#), "{html}");
+        assert!(html.contains("note"));
+    }
+
+    #[test]
+    fn test_render_relative_wiki_link() {
+        let html = markdown_to_html("[weave](../65bs)").into_string();
+        assert!(html.contains(r#"hx-get="/f/65bs""#), "{html}");
+        assert!(html.contains("weave"));
+    }
+
+    #[test]
+    fn test_render_external_link() {
+        let html = markdown_to_html("[site](https://example.com)").into_string();
+        assert!(html.contains(r#"href="https://example.com""#), "{html}");
+        assert!(!html.contains("hx-get"), "{html}");
     }
 }
