@@ -1,16 +1,13 @@
 use maud::{DOCTYPE, Markup, html};
 
-use crate::assets;
 use crate::partials;
-use crate::zk::Note;
+use crate::{Notebook, assets};
 
 /// Render the main page layout.
-pub(crate) fn layout<'a>(
-    authenticated: bool,
-    notes: impl IntoIterator<Item = &'a Note>,
-    note_content: Option<Markup>,
-    note_title: Option<&str>,
-) -> Markup {
+pub(crate) fn layout<'a>(authenticated: bool, notebook: Notebook, content: Markup) -> Markup {
+    let notebook = notebook.lock().unwrap();
+    let notes = notebook.all_notes((!authenticated).then_some("public"));
+
     let icon = if authenticated {
         assets::icons::sign_out()
     } else {
@@ -20,7 +17,8 @@ pub(crate) fn layout<'a>(
     html! {
         (DOCTYPE)
         html lang="en" {
-            (partials::head::head(note_title))
+            (partials::head::head())
+
             body class="font-sans bg-gray-100 dark:bg-gray-900 text-black dark:text-white" {
               div class="max-w-7xl mx-auto flex flex-col md:flex-row h-screen bg-white dark:bg-gray-800" {
                 div id="sidebar" class="w-full md:w-80 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-y-auto flex-shrink-0 h-screen md:h-auto" {
@@ -67,9 +65,7 @@ pub(crate) fn layout<'a>(
                 }
 
                 div class="flex flex-grow flex-col overflow-y-auto h-screen md:h-auto md:basis-1/2" id="note-content" {
-                    @if let Some(content) = note_content {
-                        (content)
-                    }
+                    (content)
                 }
               }
 

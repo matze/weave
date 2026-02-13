@@ -6,7 +6,7 @@ pub(crate) async fn login() -> Markup {
     html! {
         (DOCTYPE)
         html lang="en" {
-            head { (partials::head::head(None)) }
+            head { (partials::head::head()) }
             body class="flex h-screen items-center justify-center bg-white dark:bg-gray-900 text-black dark:text-white" {
                 div class="flex flex-col items-center justify-center p-8" {
                     form action="/login" method="post" {

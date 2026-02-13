@@ -2,7 +2,7 @@ use maud::{Markup, PreEscaped, html};
 
 use crate::md;
 
-pub(crate) fn head(note_title: Option<&str>) -> Markup {
+pub(crate) fn head() -> Markup {
     html! {
         head {
             meta charset="utf-8";
@@ -10,11 +10,7 @@ pub(crate) fn head(note_title: Option<&str>) -> Markup {
             link rel="stylesheet" type="text/css" href="/app.css";
             link rel="shortcut icon" type="image/svg+xml" href="/favicon.svg";
             style { (PreEscaped(md::highlight_css())) }
-            @if let Some(t) = note_title {
-                title { (t) " – weave" }
-            } @else {
-                title { "weave" }
-            }
+            title { "weave" }
             script {
                 (maud::PreEscaped(r#"
                 function stemFromUrl() {
