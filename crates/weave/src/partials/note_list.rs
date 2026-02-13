@@ -32,33 +32,24 @@ impl<'a> Note<'a> {
 /// Notes tagged `#pin` are grouped at the top. Notes tagged `#archived` are
 /// grouped at the bottom with greyed-out styling.
 pub(crate) fn note_list<'a>(notes: impl IntoIterator<Item = &'a zk::Note>) -> Markup {
-    let mut pinned = Vec::new();
-    let mut regular = Vec::new();
-    let mut archived = Vec::new();
-
-    for note in notes.into_iter().map(Note::new) {
-        match note {
-            Note::Pinned(_) => pinned.push(note),
-            Note::Regular(_) => regular.push(note),
-            Note::Archived(_) => archived.push(note),
-        }
-    }
+    let notes = notes.into_iter().map(Note::new).collect::<Vec<_>>();
+    let pinned = notes.iter().filter(|note| matches!(note, Note::Pinned(_)));
+    let regular = notes.iter().filter(|note| matches!(note, Note::Regular(_)));
+    let archived = notes
+        .iter()
+        .filter(|note| matches!(note, Note::Archived(_)));
 
     html! {
-        @if !pinned.is_empty() {
-            @for note in &pinned {
-                (note_item(note))
-            }
-        }
-
-        @for note in &regular {
+        @for note in pinned {
             (note_item(note))
         }
 
-        @if !archived.is_empty() {
-            @for note in &archived {
-                (note_item(note))
-            }
+        @for note in regular {
+            (note_item(note))
+        }
+
+        @for note in archived {
+            (note_item(note))
         }
     }
 }
