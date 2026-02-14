@@ -20,6 +20,9 @@ use futures_concurrency::future::Join;
 use notify::event::{AccessKind, AccessMode, ModifyKind};
 use notify::{EventKind, Watcher};
 use serde::Deserialize;
+use tower::ServiceBuilder;
+use tower_http::compression::CompressionLayer;
+use tower_http::trace::TraceLayer;
 
 type Notebook = Arc<Mutex<zk::Notebook>>;
 
@@ -162,6 +165,11 @@ async fn main() -> Result<()> {
         .route("/app.css", get(assets::css))
         .route("/favicon.svg", get(assets::favicon))
         .route("/htmx.2.0.4.min.js", get(assets::htmx_js))
+        .layer(
+            ServiceBuilder::new()
+                .layer(CompressionLayer::new())
+                .layer(TraceLayer::new_for_http()),
+        )
         .with_state(state);
 
     let addr = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), port);
