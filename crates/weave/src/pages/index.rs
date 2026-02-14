@@ -8,5 +8,5 @@ pub(crate) async fn index(
     State(notebook): State<Notebook>,
     Authenticated(authenticated): Authenticated,
 ) -> Markup {
-    partials::layout::layout(authenticated, notebook, html! {})
+    partials::layout::layout(authenticated, notebook, html! {}, false)
 }

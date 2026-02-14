@@ -17,5 +17,5 @@ pub(crate) async fn note(
             {}
     };
 
-    partials::layout::layout(authenticated, notebook, content)
+    partials::layout::layout(authenticated, notebook, content, true)
 }

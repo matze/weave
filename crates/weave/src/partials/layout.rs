@@ -4,7 +4,10 @@ use crate::partials;
 use crate::{Notebook, assets};
 
 /// Render the main page layout.
-pub(crate) fn layout(authenticated: bool, notebook: Notebook, content: Markup) -> Markup {
+///
+/// When `show_note` is true, the sidebar is hidden and the note content is
+/// visible on mobile. This is used when rendering `/note/` pages directly.
+pub(crate) fn layout(authenticated: bool, notebook: Notebook, content: Markup, show_note: bool) -> Markup {
     let notebook = notebook.lock().unwrap();
     let notes = notebook.all_notes((!authenticated).then_some("public"));
 
@@ -21,7 +24,7 @@ pub(crate) fn layout(authenticated: bool, notebook: Notebook, content: Markup) -
 
             body class="font-sans bg-gray-100 dark:bg-gray-900 text-black dark:text-white" {
               div class="max-w-7xl mx-auto flex flex-col md:flex-row h-screen bg-white dark:bg-gray-800" {
-                div id="sidebar" class="w-full md:w-80 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-y-auto flex-shrink-0 h-screen md:h-auto" {
+                div id="sidebar" class={"w-full md:w-80 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-y-auto flex-shrink-0 h-screen md:h-auto" @if show_note { " mobile-hidden" }} {
                     div class="p-4 border-b border-gray-200 dark:border-gray-700" {
                         div class="flex" {
                             div class="flex flex-col flex-auto" {
@@ -64,7 +67,7 @@ pub(crate) fn layout(authenticated: bool, notebook: Notebook, content: Markup) -
                     }
                 }
 
-                div class="flex flex-grow flex-col overflow-y-auto h-screen md:h-auto md:basis-1/2" id="note-content" {
+                div class={"flex flex-grow flex-col overflow-y-auto h-screen md:h-auto md:basis-1/2" @if show_note { " mobile-visible" }} id="note-content" {
                     (content)
                 }
               }
