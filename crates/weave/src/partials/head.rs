@@ -57,14 +57,9 @@ pub(crate) fn head() -> Markup {
                 document.addEventListener('DOMContentLoaded', function() {
                     highlightActiveNote(true);
                 });
-                window.addEventListener('popstate', function(e) {
-                    var sidebar = document.getElementById('sidebar');
-                    if (sidebar && sidebar.classList.contains('mobile-hidden')) {
-                        showSidebar();
-                        e.stopImmediatePropagation();
-                    }
+                window.addEventListener('popstate', function() {
                     highlightActiveNote(true);
-                }, true);
+                });
                 document.addEventListener('htmx:afterSettle', function(e) {
                     if (e.detail.target.id === 'note-content') {
                         var h2 = document.querySelector('#note-content h2');

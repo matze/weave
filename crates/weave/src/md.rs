@@ -368,7 +368,7 @@ fn render_node(node: &MdNode) -> Markup {
                 a href="#" class="text-sky-600 hover:underline font-semibold"
                     hx-get={ "/f/" (url) }
                     hx-target="#note-content"
-                    hx-push-url="true"
+                    hx-push-url={ "/note/" (url) }
                 { (render_children(children)) }
             },
             MdTag::ExternalLink(url) => html! {
@@ -564,6 +564,7 @@ mod tests {
     fn test_render_bare_wiki_link() {
         let html = markdown_to_html("[note](abc1)").into_string();
         assert!(html.contains(r#"hx-get="/f/abc1""#), "{html}");
+        assert!(html.contains(r#"hx-push-url="/note/abc1""#), "{html}");
         assert!(html.contains("note"));
     }
 
@@ -571,6 +572,7 @@ mod tests {
     fn test_render_relative_wiki_link() {
         let html = markdown_to_html("[weave](../65bs)").into_string();
         assert!(html.contains(r#"hx-get="/f/65bs""#), "{html}");
+        assert!(html.contains(r#"hx-push-url="/note/65bs""#), "{html}");
         assert!(html.contains("weave"));
     }
 
