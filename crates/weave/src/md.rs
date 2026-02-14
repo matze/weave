@@ -17,9 +17,15 @@ enum Segment<'a> {
     Url(&'a str),
 }
 
+static SPLITTER_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(
+        r#"(?m)(?P<tag>#[\w]+)|(?P<url>https?://[^\s<>]+)|(?:(?:^|\s)(?P<colontags>:[\w-]+(?::[\w-]+)*:))"#,
+    )
+    .expect("compiling regex")
+});
+
 struct Splitter<'a> {
     text: &'a str,
-    re: regex::Regex,
     pos: usize,
     next: Option<(usize, usize, Segment<'a>)>,
 }
@@ -45,16 +51,9 @@ impl<'a> Splitter<'a> {
     }
 
     fn new(text: &'a str) -> Self {
-        // TODO: constify
-        let re = regex::Regex::new(r#"(?m)(?P<tag>#[\w]+)|(?P<url>https?://[^\s<>]+)|(?:(?:^|\s)(?P<colontags>:[\w-]+(?::[\w-]+)*:))"#)
-            .expect("compiling regex");
-        let next = Self::next_match(&re, text, 0);
-        Self {
-            text,
-            re,
-            pos: 0,
-            next,
-        }
+        let next = Self::next_match(&SPLITTER_RE, text, 0);
+
+        Self { text, pos: 0, next }
     }
 }
 
@@ -74,7 +73,7 @@ impl<'a> Iterator for Splitter<'a> {
                     Some(Segment::Text(text))
                 } else {
                     self.pos = end;
-                    self.next = Self::next_match(&self.re, self.text, self.pos);
+                    self.next = Self::next_match(&SPLITTER_RE, self.text, self.pos);
                     Some(segment)
                 }
             }
