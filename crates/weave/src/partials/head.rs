@@ -72,6 +72,12 @@ pub(crate) fn head() -> Markup {
                 });
                 document.addEventListener('DOMContentLoaded', function() { syncView(true); });
                 window.addEventListener('popstate', function() { syncView(true); });
+                document.addEventListener('htmx:beforeHistorySave', function() {
+                    syncView(false);
+                });
+                document.addEventListener('htmx:historyRestore', function() {
+                    syncView(true);
+                });
                 document.addEventListener('htmx:afterSettle', function(e) {
                     if (e.detail.target.id === 'note-content' || e.detail.target.id === 'search-list') {
                         syncView(false);
@@ -116,6 +122,22 @@ mod tests {
         assert!(html.contains("htmx:afterSettle"), "{html}");
         assert!(html.contains("note-content"), "{html}");
         assert!(html.contains("search-list"), "{html}");
+    }
+
+    #[test]
+    fn test_history_save_cleans_mobile_classes() {
+        let html = head_html();
+        // Before HTMX caches the page, syncView resets mobile classes so
+        // the cached snapshot reflects the URL, not stale toggle state.
+        assert!(html.contains("htmx:beforeHistorySave"), "{html}");
+    }
+
+    #[test]
+    fn test_sync_view_on_history_restore() {
+        let html = head_html();
+        // After HTMX restores cached HTML on back/forward, re-derive view
+        // state from the URL so mobile panel visibility is correct.
+        assert!(html.contains("htmx:historyRestore"), "{html}");
     }
 
     #[test]
