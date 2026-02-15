@@ -245,7 +245,7 @@ fn text_to_html(text: &str) -> Markup {
                         hx-vals={ "{\"query\": \"" (tag) "\"}" }
                         hx-target="#search-list"
                         hx-on-htmx-after-request="document.querySelector('input[name=query]').value = this.getAttribute('data-tag');document.getElementById('filter-clear').classList.remove('hidden')"
-                        onclick="showSidebar()"
+                        onclick="showList()"
                         data-tag=(tag)
                     {
                         (tag)
@@ -260,7 +260,7 @@ fn text_to_html(text: &str) -> Markup {
                             hx-vals={ "{\"query\": \"#" (tag_name) "\"}" }
                             hx-target="#search-list"
                             hx-on-htmx-after-request="document.querySelector('input[name=query]').value = this.getAttribute('data-tag');document.getElementById('filter-clear').classList.remove('hidden')"
-                            onclick="showSidebar()"
+                            onclick="showList()"
                             data-tag={ "#" (tag_name) }
                         {
                             (tag_name)
@@ -580,5 +580,41 @@ mod tests {
         let html = markdown_to_html("[site](https://example.com)").into_string();
         assert!(html.contains(r#"href="https://example.com""#), "{html}");
         assert!(!html.contains("hx-get"), "{html}");
+    }
+
+    #[test]
+    fn test_hashtag_calls_show_list() {
+        let html = markdown_to_html("hello #topic world").into_string();
+        assert!(html.contains(r#"onclick="showList()""#), "{html}");
+        assert!(!html.contains("showSidebar"), "{html}");
+    }
+
+    #[test]
+    fn test_hashtag_targets_search_list() {
+        let html = markdown_to_html("see #topic").into_string();
+        assert!(html.contains(r##"hx-target="#search-list""##), "{html}");
+        assert!(html.contains(r#"hx-post="/f/search""#), "{html}");
+    }
+
+    #[test]
+    fn test_colon_tags_call_show_list() {
+        let html = markdown_to_html("status :draft:review:").into_string();
+        assert!(html.contains(r#"onclick="showList()""#), "{html}");
+        assert!(!html.contains("showSidebar"), "{html}");
+    }
+
+    #[test]
+    fn test_wiki_link_has_push_url() {
+        let html = markdown_to_html("[my note](abc1)").into_string();
+        assert!(html.contains(r#"hx-push-url="/note/abc1""#), "{html}");
+        assert!(html.contains(r##"hx-target="#note-content""##), "{html}");
+    }
+
+    #[test]
+    fn test_wiki_link_no_sidebar_call() {
+        let html = markdown_to_html("[link](abc1)").into_string();
+        assert!(!html.contains("showSidebar"), "{html}");
+        assert!(!html.contains("showList"), "{html}");
+        assert!(!html.contains("goBack"), "{html}");
     }
 }

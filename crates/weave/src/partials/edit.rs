@@ -13,7 +13,7 @@ fn edit_form(stem: &str, body: &str) -> Markup {
             div class="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex-shrink-0" {
                 button
                     class="md:hidden p-1 -ml-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                    onclick="showSidebar()"
+                    onclick="goBack()"
                     aria-label="Back to notes" {
                     (assets::icons::back())
                 }
@@ -103,7 +103,7 @@ pub(crate) async fn save(
                 div class="flex items-center gap-3" {
                     button
                         class="md:hidden p-1 -ml-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                        onclick="showSidebar()"
+                        onclick="goBack()"
                         aria-label="Back to notes" {
                         (assets::icons::back())
                     }

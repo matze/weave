@@ -28,7 +28,7 @@ pub(crate) async fn note(
                 div class="flex items-center gap-3" {
                     button
                         class="md:hidden p-1 -ml-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                        onclick="showSidebar()"
+                        onclick="goBack()"
                         aria-label="Back to notes" {
                         (assets::icons::back())
                     }
