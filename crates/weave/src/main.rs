@@ -162,7 +162,8 @@ async fn main() -> Result<()> {
         )
         .route("/f/{stem}/edit", get(partials::edit::edit))
         .route("/f/{stem}/preview", post(partials::edit::preview))
-        .route("/app.css", get(assets::css))
+        .route("/app.css", get(assets::app_css))
+        .route("/highlight.css", get(assets::highlight_css))
         .route("/favicon.svg", get(assets::favicon))
         .route("/htmx.2.0.4.min.js", get(assets::htmx_js))
         .layer(

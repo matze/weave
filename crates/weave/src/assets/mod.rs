@@ -10,10 +10,17 @@ pub(crate) async fn favicon() -> impl IntoResponse {
     )
 }
 
-pub(crate) async fn css() -> impl IntoResponse {
+pub(crate) async fn app_css() -> impl IntoResponse {
     (
         [(header::CONTENT_TYPE, "text/css")],
         include_str!(concat!(env!("OUT_DIR"), "/app.css")),
+    )
+}
+
+pub(crate) async fn highlight_css() -> impl IntoResponse {
+    (
+        [(header::CONTENT_TYPE, "text/css")],
+        include_str!(concat!(env!("OUT_DIR"), "/highlight.css")),
     )
 }
 

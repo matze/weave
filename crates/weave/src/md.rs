@@ -6,7 +6,7 @@ use std::sync::{LazyLock, RwLock};
 
 use maud::{Markup, PreEscaped, html};
 use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag as CmarkTag};
-use syntect::html::{ClassStyle, ClassedHTMLGenerator, css_for_theme_with_class_style};
+use syntect::html::{ClassStyle, ClassedHTMLGenerator};
 use syntect::parsing::SyntaxSet;
 
 #[derive(Debug, Clone, Copy)]
@@ -440,9 +440,6 @@ fn render_node(node: &MdNode) -> Markup {
 
 static SYNTAX_SET: LazyLock<SyntaxSet> = LazyLock::new(two_face::syntax::extra_newlines);
 
-static THEME_SET: LazyLock<two_face::theme::EmbeddedLazyThemeSet> =
-    LazyLock::new(two_face::theme::extra);
-
 static HIGHLIGHT_CACHE: LazyLock<RwLock<HashMap<u64, String>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
@@ -476,32 +473,6 @@ fn highlight_code(source: &str, lang: Option<&str>) -> Option<String> {
     HIGHLIGHT_CACHE.write().unwrap().insert(key, html.clone());
 
     Some(html)
-}
-
-/// Returns CSS for syntax highlighting with light and dark theme support.
-pub fn highlight_css() -> &'static str {
-    static CSS: LazyLock<String> = LazyLock::new(|| {
-        let class_style = ClassStyle::SpacedPrefixed { prefix: "hl-" };
-
-        let light_theme = THEME_SET.get(two_face::theme::EmbeddedThemeName::InspiredGithub);
-        let light_css = css_for_theme_with_class_style(light_theme, class_style).unwrap();
-        // Strip background-color rules, Tailwind handles backgrounds.
-        let light_css = strip_background_color(&light_css);
-
-        let dark_theme = THEME_SET.get(two_face::theme::EmbeddedThemeName::Nord);
-        let dark_css = css_for_theme_with_class_style(dark_theme, class_style).unwrap();
-        let dark_css = strip_background_color(&dark_css);
-
-        format!("{light_css}\n@media (prefers-color-scheme: dark) {{\n{dark_css}\n}}\n")
-    });
-    &CSS
-}
-
-fn strip_background_color(css: &str) -> String {
-    css.lines()
-        .filter(|line| !line.contains("background-color"))
-        .collect::<Vec<_>>()
-        .join("\n")
 }
 
 pub fn markdown_to_html(source: &str) -> Markup {
