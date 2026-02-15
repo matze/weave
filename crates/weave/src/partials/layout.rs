@@ -7,7 +7,12 @@ use crate::{Notebook, assets};
 ///
 /// When `show_note` is true, the sidebar is hidden and the note content is
 /// visible on mobile. This is used when rendering `/note/` pages directly.
-pub(crate) fn layout(authenticated: bool, notebook: Notebook, content: Markup, show_note: bool) -> Markup {
+pub(crate) fn layout(
+    authenticated: bool,
+    notebook: Notebook,
+    content: Markup,
+    show_note: bool,
+) -> Markup {
     let notebook = notebook.lock().unwrap();
     let notes = notebook.all_notes((!authenticated).then_some("public"));
 
@@ -73,6 +78,7 @@ pub(crate) fn layout(authenticated: bool, notebook: Notebook, content: Markup, s
               }
 
                 script src="/htmx.2.0.4.min.js" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" {}
+                script src="/app.js" {}
             }
         }
     }

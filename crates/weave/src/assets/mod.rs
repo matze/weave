@@ -17,6 +17,13 @@ pub(crate) async fn app_css() -> impl IntoResponse {
     )
 }
 
+pub(crate) async fn app_js() -> impl IntoResponse {
+    (
+        [(header::CONTENT_TYPE, "text/javascript")],
+        include_str!("app.js"),
+    )
+}
+
 pub(crate) async fn highlight_css() -> impl IntoResponse {
     (
         [(header::CONTENT_TYPE, "text/css")],
@@ -26,7 +33,7 @@ pub(crate) async fn highlight_css() -> impl IntoResponse {
 
 pub(crate) async fn htmx_js() -> impl IntoResponse {
     (
-        [(header::CONTENT_TYPE, "text/css")],
+        [(header::CONTENT_TYPE, "text/javascript")],
         include_str!("htmx.2.0.4.min.js"),
     )
 }
