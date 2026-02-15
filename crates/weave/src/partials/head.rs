@@ -70,7 +70,11 @@ pub(crate) fn head() -> Markup {
                 document.addEventListener('DOMContentLoaded', function() { syncView(true); });
                 window.addEventListener('popstate', function() { syncView(true); });
                 document.addEventListener('htmx:beforeHistorySave', function() {
-                    syncView(false);
+                    // Only sync mobile classes for the snapshot; skip active-note
+                    // to avoid re-marking the old note (showNote already set it).
+                    var stem = stemFromUrl();
+                    document.getElementById('sidebar').classList.toggle('mobile-hidden', !!stem);
+                    document.getElementById('note-content').classList.toggle('mobile-visible', !!stem);
                 });
                 document.addEventListener('htmx:historyRestore', function() {
                     syncView(true);
