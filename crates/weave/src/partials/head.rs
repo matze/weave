@@ -12,6 +12,7 @@ pub(crate) fn head() -> Markup {
             link rel="stylesheet" type="text/css" href="/app.css";
             link rel="shortcut icon" type="image/svg+xml" href="/favicon.svg";
             style { (PreEscaped(md::highlight_css())) }
+            style { (PreEscaped("@keyframes note-load{from{width:0}to{width:100%}}.note-load-bar{position:absolute;bottom:0;left:0;height:2px;background:#0284c7;animation:note-load 30ms linear;width:100%}")) }
             title { "weave" }
             script {
                 (maud::PreEscaped(r#"
@@ -35,15 +36,21 @@ pub(crate) fn head() -> Markup {
                     }
                     var h2 = document.querySelector('#note-content h2');
                     document.title = h2 ? h2.textContent + ' \u{2013} weave' : 'weave';
+                    var bar = document.querySelector('.note-load-bar');
+                    if (bar) bar.remove();
                 }
                 function showNote(e) {
-                    document.getElementById('sidebar').classList.add('mobile-hidden');
-                    document.getElementById('note-content').classList.add('mobile-visible');
+                    var old = document.querySelector('.note-load-bar');
+                    if (old) old.remove();
                     if (e && e.currentTarget) {
                         document.querySelectorAll('.note-item.active-note').forEach(function(el) {
                             el.classList.remove('active-note');
                         });
                         e.currentTarget.classList.add('active-note');
+                        e.currentTarget.style.position = 'relative';
+                        var bar = document.createElement('div');
+                        bar.className = 'note-load-bar';
+                        e.currentTarget.appendChild(bar);
                     }
                 }
                 function showList() {
@@ -161,5 +168,36 @@ mod tests {
     fn test_no_show_sidebar_function() {
         let html = head_html();
         assert!(!html.contains("showSidebar"), "{html}");
+    }
+
+    #[test]
+    fn test_show_note_defers_panel_switch() {
+        let html = head_html();
+        // showNote must NOT toggle mobile classes — syncView handles that
+        // after content arrives, so the user stays on the sidebar while loading.
+        let show_note = html.find("function showNote(").expect("showNote exists");
+        let after = &html[show_note..];
+        let end = after
+            .find("\n                function ")
+            .unwrap_or(after.len());
+        let body = &after[..end];
+        assert!(
+            !body.contains("mobile-hidden"),
+            "showNote must not toggle panels"
+        );
+        assert!(
+            !body.contains("mobile-visible"),
+            "showNote must not toggle panels"
+        );
+    }
+
+    #[test]
+    fn test_loading_bar_css_and_cleanup() {
+        let html = head_html();
+        // CSS animation for loading bar
+        assert!(html.contains("@keyframes note-load"), "{html}");
+        assert!(html.contains(".note-load-bar"), "{html}");
+        // showNote creates the bar, syncView removes it
+        assert!(html.contains("note-load-bar"), "{html}");
     }
 }
