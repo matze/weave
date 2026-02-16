@@ -305,8 +305,8 @@ fn render_node(node: &MdNode) -> Markup {
             MdTag::Heading(level) => {
                 let inner = render_children(children);
                 match level {
-                    1 => html! { h1 class="text-lg font-bold mt-8 mb-4" { (inner) } },
-                    2 => html! { h2 class="text-base font-bold mt-6 mb-3" { (inner) } },
+                    1 => html! { h1 class="text-xl font-bold mt-8 mb-4" { (inner) } },
+                    2 => html! { h2 class="text-lg font-bold mt-6 mb-3" { (inner) } },
                     3 => html! { h3 class="text-base font-semibold mt-5 mb-2" { (inner) } },
                     4 => {
                         html! { h4 class="text-sm font-semibold mt-4 mb-2 uppercase tracking-wide" { (inner) } }
