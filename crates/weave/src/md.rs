@@ -1,8 +1,6 @@
 //! Render Markdown as HTML.
 
-use std::collections::HashMap;
-use std::hash::{DefaultHasher, Hash, Hasher};
-use std::sync::{LazyLock, RwLock};
+use std::sync::LazyLock;
 
 use maud::{Markup, PreEscaped, html};
 use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag as CmarkTag};
@@ -327,6 +325,7 @@ fn render_node(node: &MdNode) -> Markup {
             MdTag::CodeBlock(lang) => {
                 let code = collect_text(children);
                 let pre_class = "bg-gray-100 dark:bg-gray-900 p-4 rounded my-6 overflow-x-auto font-mono text-sm leading-relaxed";
+
                 match highlight_code(&code, lang.as_deref()) {
                     Some(highlighted) => html! {
                         pre class=(pre_class) {
@@ -440,21 +439,9 @@ fn render_node(node: &MdNode) -> Markup {
 
 static SYNTAX_SET: LazyLock<SyntaxSet> = LazyLock::new(two_face::syntax::extra_newlines);
 
-static HIGHLIGHT_CACHE: LazyLock<RwLock<HashMap<u64, String>>> =
-    LazyLock::new(|| RwLock::new(HashMap::new()));
-
 fn highlight_code(source: &str, lang: Option<&str>) -> Option<String> {
     let lang = lang?;
     let syntax = SYNTAX_SET.find_syntax_by_token(lang)?;
-
-    let mut hasher = DefaultHasher::new();
-    lang.hash(&mut hasher);
-    source.hash(&mut hasher);
-    let key = hasher.finish();
-
-    if let Some(cached) = HIGHLIGHT_CACHE.read().unwrap().get(&key) {
-        return Some(cached.clone());
-    }
 
     let mut generator = ClassedHTMLGenerator::new_with_class_style(
         syntax,
@@ -468,11 +455,7 @@ fn highlight_code(source: &str, lang: Option<&str>) -> Option<String> {
             .ok()?;
     }
 
-    let html = generator.finalize();
-
-    HIGHLIGHT_CACHE.write().unwrap().insert(key, html.clone());
-
-    Some(html)
+    Some(generator.finalize())
 }
 
 pub fn markdown_to_html(source: &str) -> Markup {
