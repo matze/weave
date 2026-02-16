@@ -1,17 +1,17 @@
 # Weave
 
-<p align="center"><strong><a href="https://weave.bloerg.net">DEMO</a></strong></p>
-
 Weave is a self-hosted, single-user, web-based frontend to view and edit
 [zk](https://github.com/zk-org/zk) notes. It is lightweight, quick and
 opinionated. It features
 
 - a single binary with a built-in zk re-implementation (no `zk` binary needed)
 - fuzzy search across all note titles and tags
-- note editing
+- cross-linking and note editing
 - syntax highlighting of code blocks
 - real-time file watching (external edits show up immediately)
 - light and dark mode
+
+<p align="center"><strong><a href="https://weave.bloerg.net/note/weave">DEMO</a></strong></p>
 
 
 ## Building from source
@@ -30,21 +30,15 @@ The binary ends up in `target/release/weave`.
 
 ## Quickstart
 
-Point Weave at a zk notebook directory and set a password:
-
-```bash
-ZK_NOTEBOOK_DIR="/path/to/notebook" WEAVE_PASSWORD="secret" ./target/release/weave
-```
-
-This starts the server on [http://localhost:8000](http://localhost:8000).
-
-To try it with the included example notebook:
+Point Weave at a zk notebook directory (here we use the demo notebook), set a
+password and run the application from source with:
 
 ```bash
 ZK_NOTEBOOK_DIR="$(pwd)/notebook" WEAVE_PASSWORD="secret" cargo run --release
 ```
 
-You can see a demo instance at https://weave.bloerg.net.
+This starts the server on [http://localhost:8000](http://localhost:8000). A demo
+instance can be accessed at https://weave.bloerg.net.
 
 
 ## Environment variables
