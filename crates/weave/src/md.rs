@@ -459,12 +459,11 @@ fn highlight_code(source: &str, lang: Option<&str>) -> Option<String> {
 }
 
 pub fn markdown_to_html(source: &str) -> Markup {
-    let mut options = Options::empty();
-    options.insert(Options::ENABLE_TABLES);
-    options.insert(Options::ENABLE_STRIKETHROUGH);
-    options.insert(Options::ENABLE_SMART_PUNCTUATION);
+    let parser = Parser::new_ext(
+        source,
+        Options::ENABLE_TABLES | Options::ENABLE_STRIKETHROUGH | Options::ENABLE_SMART_PUNCTUATION,
+    );
 
-    let parser = Parser::new_ext(source, options);
     let tree = build_tree(parser);
 
     html! {
