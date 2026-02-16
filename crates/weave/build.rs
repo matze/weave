@@ -31,7 +31,7 @@ fn main() {
         println!("cargo:warning={error}");
     }
 
-    std::fs::write(&format!("{out_dir}/highlight.css"), build_highlight_css())
+    std::fs::write(format!("{out_dir}/highlight.css"), build_highlight_css())
         .expect("writing highlight CSS");
 }
 
@@ -41,12 +41,12 @@ fn build_highlight_css() -> String {
     let extra = two_face::theme::extra();
     let light_theme = extra.get(two_face::theme::EmbeddedThemeName::InspiredGithub);
 
-    let light_css = css_for_theme_with_class_style(&light_theme, class_style).unwrap();
+    let light_css = css_for_theme_with_class_style(light_theme, class_style).unwrap();
     // Strip background-color rules, Tailwind handles backgrounds.
     let light_css = strip_background_color(&light_css);
 
     let dark_theme = extra.get(two_face::theme::EmbeddedThemeName::Nord);
-    let dark_css = css_for_theme_with_class_style(&dark_theme, class_style).unwrap();
+    let dark_css = css_for_theme_with_class_style(dark_theme, class_style).unwrap();
     let dark_css = strip_background_color(&dark_css);
 
     format!("{light_css}\n@media (prefers-color-scheme: dark) {{\n{dark_css}\n}}\n")
