@@ -15,11 +15,6 @@
   line-height: inherit;
 }
 
-/* Links: no default underline, underline on hover only */
-.prose :where(a) {
-  text-decoration: none;
-}
-
 /* Tighten spacing inside blockquotes */
 .prose :where(blockquote) > :first-child {
   margin-top: 0;
@@ -42,12 +37,6 @@
 
 .note-item.active-note {
   border-left-color: var(--color-blue-400);
-}
-
-@media (prefers-color-scheme: dark) {
-  .note-item.active-note {
-    border-left-color: var(--color-blue-400);
-  }
 }
 
 @media (max-width: 767px) {
