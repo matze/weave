@@ -33,7 +33,7 @@ pub(crate) fn layout(
                     div class="p-4 border-b border-gray-200 dark:border-gray-700" {
                         div class="flex" {
                             div class="flex flex-col flex-auto" {
-                                span class="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-green-600" {"weave"}
+                                span class="text-xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-green-600" {"weave"}
                             }
 
                             div class="flex flex-row flex-none items-center gap-2 mr-2" {
