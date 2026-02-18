@@ -29,7 +29,8 @@ signing in. This is useful for sharing individual notes with others.
 
 Press <kbd>f</kbd> or click the "Filter notes..." box to search. Weave uses
 fuzzy matching against note titles, so you do not need to type the exact title.
-Prefix a word with `#` to filter by tag instead, e.g. `#public`.
+Prefix a word with `#` to filter by tag instead, e.g. `#public`. To leave the
+search bar, press <kbd>esc</kbd>.
 
 ### Editing
 
@@ -39,6 +40,11 @@ them with the corresponding buttons.
 
 Weave watches the notebook directory for changes, so edits made outside of Weave
 (in your text editor, via Git, etc.) are picked up automatically.
+
+### Sidebar navigation
+
+Use <kbd>j</kbd> to move to the next note and <kbd>k</kbd> to move to the
+previous note.
 
 
 ## Special tags

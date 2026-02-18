@@ -49,6 +49,10 @@ function goBack() {
 }
 
 document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.activeElement === document.getElementById('filter-input')) {
+        document.activeElement.blur();
+        return;
+    }
     var t = document.activeElement.tagName;
     if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return;
     if (e.key === 'e') {
@@ -57,6 +61,15 @@ document.addEventListener('keydown', function(e) {
     } else if (e.key === 'f') {
         e.preventDefault();
         document.getElementById('filter-input').focus();
+    } else if (e.key === 'j' || e.key === 'k') {
+        var items = Array.from(document.querySelectorAll('#search-list .note-item'));
+        if (!items.length) return;
+        var active = document.querySelector('.note-item.active-note');
+        var idx = active ? items.indexOf(active) : -1;
+        var next = e.key === 'j' ? idx + 1 : idx - 1;
+        if (next < 0 || next >= items.length) return;
+        items[next].click();
+        items[next].scrollIntoView({block: 'nearest'});
     }
 });
 
