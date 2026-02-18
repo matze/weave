@@ -8,7 +8,6 @@ pub(crate) struct Issuer {
     decoding_key: jwt::DecodingKey,
     header: jwt::Header,
     validation: jwt::Validation,
-    claims: Claims,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -31,12 +30,6 @@ impl Issuer {
             .map_err(|_| anyhow::anyhow!("failed to parse key pair"))?;
         let decoding_key = jwt::DecodingKey::from_ed_der(key_pair.public_key().as_ref());
 
-        let claims = Claims {
-            sub: "user".into(),
-            iss: "weave".into(),
-            exp: jwt::get_current_timestamp() + 60 * 24 * 30,
-        };
-
         let header = jwt::Header::new(jwt::Algorithm::EdDSA);
         let validation = jwt::Validation::new(jwt::Algorithm::EdDSA);
 
@@ -45,12 +38,16 @@ impl Issuer {
             decoding_key,
             header,
             validation,
-            claims,
         })
     }
 
     pub(crate) fn new_token(&self) -> String {
-        jsonwebtoken::encode(&self.header, &self.claims, &self.encoding_key).unwrap()
+        let claims = Claims {
+            sub: JWT_SUB.into(),
+            iss: JWT_ISS.into(),
+            exp: jwt::get_current_timestamp() + 60 * 60 * 24 * 30,
+        };
+        jsonwebtoken::encode(&self.header, &claims, &self.encoding_key).unwrap()
     }
 
     pub(crate) fn is_valid(&self, token: &str) -> bool {
