@@ -122,6 +122,35 @@ impl Notebook {
         Ok(())
     }
 
+    /// Remove the note with the given stem from the notebook.
+    /// No-op if the stem is not known.
+    pub fn remove(&mut self, stem: &str) {
+        let Some(&idx) = self.stems.get(stem) else {
+            return;
+        };
+
+        // Clean up tag index
+        let old_tags: Vec<String> = self.notes[idx].tags().to_vec();
+        for tag in &old_tags {
+            if let Some(stems) = self.tags.get_mut(&tag.to_lowercase()) {
+                stems.retain(|s| s != stem);
+                if stems.is_empty() {
+                    self.tags.remove(&tag.to_lowercase());
+                }
+            }
+        }
+
+        self.stems.remove(stem);
+
+        // swap_remove is O(1) but moves the last element to `idx`.
+        // Update the stems index for whichever note lands there.
+        self.notes.swap_remove(idx);
+        if idx < self.notes.len() {
+            let swapped_stem = self.notes[idx].filename_stem().to_owned();
+            self.stems.insert(swapped_stem, idx);
+        }
+    }
+
     /// Look up a note by its filename stem.
     pub fn note(&self, stem: &str) -> Option<&Note> {
         self.stems.get(stem).map(|&idx| &self.notes[idx])
@@ -438,5 +467,46 @@ mod tests {
         let dir = setup_notebook();
         let nb = Notebook::load(dir.path()).unwrap();
         assert_eq!(nb.all_notes(None).count(), 3);
+    }
+
+    #[test]
+    fn test_remove_note() {
+        let dir = setup_notebook();
+        let mut nb = Notebook::load(dir.path()).unwrap();
+        assert_eq!(nb.all_notes(None).count(), 3);
+
+        nb.remove("note1");
+
+        assert_eq!(nb.all_notes(None).count(), 2);
+        assert!(nb.note("note1").is_none());
+        // Tag index is cleaned up
+        assert_eq!(nb.all_notes(Some("testing")).count(), 0);
+        // Other notes are still accessible
+        assert!(nb.note("note2").is_some());
+    }
+
+    #[test]
+    fn test_remove_nonexistent() {
+        let dir = setup_notebook();
+        let mut nb = Notebook::load(dir.path()).unwrap();
+        // Should be a no-op
+        nb.remove("doesnotexist");
+        assert_eq!(nb.all_notes(None).count(), 3);
+    }
+
+    #[test]
+    fn test_remove_preserves_remaining_indices() {
+        // Verify that swap_remove correctly updates the stems index for the
+        // note that gets moved.
+        let dir = setup_notebook();
+        let mut nb = Notebook::load(dir.path()).unwrap();
+
+        nb.remove("note1");
+
+        // All remaining notes must still be reachable by stem.
+        for note in nb.all_notes(None) {
+            let stem = note.filename_stem().to_owned();
+            assert!(nb.note(&stem).is_some(), "stem {stem} unreachable after remove");
+        }
     }
 }

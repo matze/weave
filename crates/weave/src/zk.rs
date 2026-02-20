@@ -31,6 +31,11 @@ impl Notebook {
         Ok(())
     }
 
+    /// Remove the note with the given stem from the in-memory notebook.
+    pub fn remove(&mut self, stem: &str) {
+        self.inner.remove(stem);
+    }
+
     /// Return note with the given filename stem or `None`.
     pub fn note(&self, stem: &str) -> Option<Note> {
         self.inner.note(stem).cloned()

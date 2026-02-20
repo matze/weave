@@ -17,7 +17,7 @@ use axum::routing::{get, post};
 use axum_extra::extract::SignedCookieJar;
 use axum_extra::extract::cookie::{Cookie, Key};
 use futures_concurrency::future::Join;
-use notify::event::{AccessKind, AccessMode, ModifyKind};
+use notify::event::{AccessKind, AccessMode, ModifyKind, RenameMode};
 use notify::{EventKind, Watcher};
 use serde::Deserialize;
 use tower::ServiceBuilder;
@@ -80,38 +80,82 @@ async fn do_login(
     }
 }
 
+enum WatchEvent {
+    Modified(std::path::PathBuf),
+    Removed(std::path::PathBuf),
+}
+
 async fn watch(notebook: Notebook) -> Result<()> {
     let path = notebook.lock().unwrap().path.clone();
 
     tokio::task::spawn_blocking(move || {
-        let (tx, rx) = mpsc::channel();
+        let (tx, rx) = mpsc::channel::<WatchEvent>();
 
         let mut watcher = notify::recommended_watcher(move |result| {
-            if let Ok(notify::Event { kind, paths, .. }) = result
-                && matches!(
-                    kind,
-                    EventKind::Access(AccessKind::Close(AccessMode::Write))
-                        | EventKind::Create(_)
-                        | EventKind::Modify(ModifyKind::Name(_))
-                )
-            {
-                for path in paths.into_iter() {
-                    if path.extension().map(|ext| ext == "md").unwrap_or(false) {
-                        tracing::debug!(?path, "changed");
-                        tx.send(path).unwrap();
+            let Ok(notify::Event { kind, paths, .. }) = result else {
+                return;
+            };
+
+            let is_md = |p: &std::path::Path| p.extension().is_some_and(|e| e == "md");
+
+            match kind {
+                // File deleted outright, or a note was renamed away.
+                EventKind::Remove(_)
+                | EventKind::Modify(ModifyKind::Name(RenameMode::From)) => {
+                    for path in paths {
+                        if is_md(&path) {
+                            tracing::debug!(?path, "removed");
+                            let _ = tx.send(WatchEvent::Removed(path));
+                        }
                     }
                 }
+                // Atomic rename (both paths in one event): first is old, second is new.
+                EventKind::Modify(ModifyKind::Name(RenameMode::Both)) => {
+                    if let [from, to] = paths.as_slice() {
+                        if is_md(from) {
+                            tracing::debug!(?from, "renamed away");
+                            let _ = tx.send(WatchEvent::Removed(from.clone()));
+                        }
+                        if is_md(to) {
+                            tracing::debug!(?to, "renamed to");
+                            let _ = tx.send(WatchEvent::Modified(to.clone()));
+                        }
+                    }
+                }
+                // Normal write/create/rename-to.
+                EventKind::Access(AccessKind::Close(AccessMode::Write))
+                | EventKind::Create(_)
+                | EventKind::Modify(ModifyKind::Name(_)) => {
+                    for path in paths {
+                        if is_md(&path) {
+                            tracing::debug!(?path, "changed");
+                            let _ = tx.send(WatchEvent::Modified(path));
+                        }
+                    }
+                }
+                _ => {}
             }
         })?;
 
-        watcher.watch(&path, notify::RecursiveMode::NonRecursive)?;
+        // Watch recursively so notes in subdirectories are also tracked.
+        watcher.watch(&path, notify::RecursiveMode::Recursive)?;
 
-        while let Ok(path) = rx.recv() {
-            if let Some(stem) = path.file_stem().and_then(|name| name.to_str()) {
-                // TODO: we are locking the entire notebook while loading the new note. Perhaps
-                // decouple that.
-                if let Err(err) = notebook.lock().unwrap().reload(stem) {
-                    tracing::error!(?err, "failed to reload {stem}");
+        while let Ok(event) = rx.recv() {
+            match event {
+                WatchEvent::Modified(path) => {
+                    if let Some(stem) = path.file_stem().and_then(|n| n.to_str()) {
+                        // TODO: we are locking the entire notebook while loading the new note.
+                        // Perhaps decouple that.
+                        if let Err(err) = notebook.lock().unwrap().reload(stem) {
+                            tracing::error!(?err, "failed to reload {stem}");
+                        }
+                    }
+                }
+                WatchEvent::Removed(path) => {
+                    if let Some(stem) = path.file_stem().and_then(|n| n.to_str()) {
+                        tracing::info!(stem, "removing note");
+                        notebook.lock().unwrap().remove(stem);
+                    }
                 }
             }
         }
