@@ -90,7 +90,7 @@ document.addEventListener('htmx:historyRestore', function() {
 });
 
 document.addEventListener('htmx:afterSettle', function(e) {
-    if (e.detail.target.id === 'note-content' || e.detail.target.id === 'search-list') {
+    if (e.detail.target.id === 'note-content') {
         syncView(false);
     }
 });
