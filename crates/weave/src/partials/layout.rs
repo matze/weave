@@ -48,7 +48,7 @@ pub(crate) fn layout(
                         div class="relative" {
                             input #filter-input type="search"
                                 name="query"
-                                placeholder="Filter notes..."
+                                placeholder="Type 'F' to filter"
                                 class="w-full p-2 pr-8 rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 hx-post="/f/search"
                                 hx-trigger="input changed delay:300ms, keyup[key=='Enter'], notes-updated from:body"
