@@ -35,6 +35,23 @@
   margin-bottom: 0.25rem;
 }
 
+/* Shift all dark-mode gray backgrounds one step darker and desaturate the blue tint */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-gray-600: oklch(37.3% .010 260);
+    --color-gray-700: oklch(27.8% .010 260);
+    --color-gray-800: oklch(16%   .010 260);
+    --color-gray-900: oklch(13%   .008 260);
+  }
+}
+
+/* Note hover needs its own value since container and hover now share the same gray-800 mapping */
+@media (prefers-color-scheme: dark) {
+  .note-item:hover {
+    background-color: oklch(21% .010 260);
+  }
+}
+
 .note-item.active-note {
   border-left-color: var(--color-blue-400);
 }
