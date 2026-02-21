@@ -41,17 +41,17 @@ impl Notebook {
         self.inner.note(stem).cloned()
     }
 
-    /// Return all notes, optionally filtered by a required tag, sorted by title.
+    /// Return all notes, optionally filtered by a required tag, sorted by last modified (most recent first).
     pub fn all_notes(&self, with_tag: Option<&str>) -> Vec<&Note> {
         let mut notes: Vec<&Note> = self.inner.all_notes(with_tag).collect();
-        notes.sort_by_key(|n| n.title().to_lowercase());
+        notes.sort_by(|a, b| b.modified().cmp(&a.modified()));
         notes
     }
 
-    /// Return notes for given tag, sorted by title.
+    /// Return notes for given tag, sorted by last modified (most recent first).
     pub fn search_tag(&self, tag: &str) -> Vec<&Note> {
         let mut notes: Vec<&Note> = self.inner.all_notes(Some(tag)).collect();
-        notes.sort_by_key(|n| n.title().to_lowercase());
+        notes.sort_by(|a, b| b.modified().cmp(&a.modified()));
         notes
     }
 
