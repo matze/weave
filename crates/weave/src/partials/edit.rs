@@ -83,7 +83,11 @@ pub(crate) async fn save(
     let note = tokio::task::spawn_blocking(move || {
         let mut notebook = notebook.lock().unwrap();
 
-        let file_path = std::path::PathBuf::from(&notebook.path).join(format!("{stem_clone}.md"));
+        let file_path = notebook
+            .note(&stem_clone)
+            .ok_or(StatusCode::NOT_FOUND)?
+            .abs_path()
+            .to_owned();
 
         std::fs::write(&file_path, &body).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 

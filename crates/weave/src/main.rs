@@ -100,8 +100,7 @@ async fn watch(notebook: Notebook) -> Result<()> {
 
             match kind {
                 // File deleted outright, or a note was renamed away.
-                EventKind::Remove(_)
-                | EventKind::Modify(ModifyKind::Name(RenameMode::From)) => {
+                EventKind::Remove(_) | EventKind::Modify(ModifyKind::Name(RenameMode::From)) => {
                     for path in paths {
                         if is_md(&path) {
                             tracing::debug!(?path, "removed");

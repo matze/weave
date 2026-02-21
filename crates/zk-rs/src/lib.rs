@@ -506,7 +506,10 @@ mod tests {
         // All remaining notes must still be reachable by stem.
         for note in nb.all_notes(None) {
             let stem = note.filename_stem().to_owned();
-            assert!(nb.note(&stem).is_some(), "stem {stem} unreachable after remove");
+            assert!(
+                nb.note(&stem).is_some(),
+                "stem {stem} unreachable after remove"
+            );
         }
     }
 }
