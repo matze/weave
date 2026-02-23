@@ -318,7 +318,7 @@ fn render_node(node: &MdNode) -> Markup {
                 }
             }
             MdTag::BlockQuote => html! {
-                blockquote class="border-s-4 border-blue-600 bg-blue-50 dark:bg-blue-950 p-4 rounded my-4 italic text-gray-700 dark:text-gray-300" {
+                blockquote class="border-s-4 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 p-4 rounded my-4 italic text-gray-700 dark:text-gray-300" {
                     (render_children(children))
                 }
             },
