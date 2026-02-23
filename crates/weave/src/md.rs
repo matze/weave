@@ -39,12 +39,15 @@ impl<'a> Splitter<'a> {
             Some((m.start(), m.end(), Segment::ColonTags(m.as_str())))
         } else {
             let m = caps.get(0).unwrap();
-            let segment = if caps.name("tag").is_some() {
-                Segment::Tag(m.as_str())
+            if caps.name("tag").is_some() {
+                Some((m.start(), m.end(), Segment::Tag(m.as_str())))
             } else {
-                Segment::Url(m.as_str())
-            };
-            Some((m.start(), m.end(), segment))
+                let trimmed = m
+                    .as_str()
+                    .trim_end_matches(|c: char| matches!(c, '.' | ',' | ';' | ':' | '!' | '?' | ')' | ']'));
+                let end = m.start() + trimmed.len();
+                Some((m.start(), end, Segment::Url(trimmed)))
+            }
         }
     }
 
@@ -592,6 +595,13 @@ mod tests {
         let html = markdown_to_html("[site](https://example.com)").into_string();
         assert!(html.contains(r#"href="https://example.com""#), "{html}");
         assert!(!html.contains("hx-get"), "{html}");
+    }
+
+    #[test]
+    fn test_autolink_strips_trailing_period() {
+        let html = markdown_to_html("see https://example.com.").into_string();
+        assert!(html.contains(r#"href="https://example.com""#), "{html}");
+        assert!(html.contains("</a>."), "{html}");
     }
 
     #[test]
