@@ -59,6 +59,28 @@ impl Notebook {
     pub fn search_titles(&self, query: &str, with_tag: Option<&str>) -> Vec<&Note> {
         self.inner.search_titles(query, with_tag).collect()
     }
+
+    /// Return notes that wiki-link to `stem`.
+    /// If `authenticated` is false, only public-tagged notes are returned.
+    pub fn backlinks(&self, stem: &str, authenticated: bool) -> Vec<Note> {
+        self.inner
+            .backlinks(stem)
+            .into_iter()
+            .filter(|n| authenticated || n.has("public"))
+            .cloned()
+            .collect()
+    }
+
+    /// Resolve outgoing wiki-link stems to notes.
+    /// If `authenticated` is false, only public-tagged notes are returned.
+    pub fn outgoing_links(&self, stems: &[String], authenticated: bool) -> Vec<Note> {
+        stems
+            .iter()
+            .filter_map(|stem| self.inner.note(stem))
+            .filter(|n| authenticated || n.has("public"))
+            .cloned()
+            .collect()
+    }
 }
 
 /// Extension trait for weave-specific [`Note`] methods.

@@ -303,17 +303,18 @@ fn render_node(node: &MdNode) -> Markup {
                 p class="my-4 leading-relaxed" { (render_children(children)) }
             },
             MdTag::Heading(level) => {
+                let id = heading_anchor(&collect_text(children));
                 let inner = render_children(children);
                 match level {
-                    1 => html! { h1 class="text-xl font-bold mt-8 mb-4" { (inner) } },
-                    2 => html! { h2 class="text-lg font-bold mt-6 mb-3" { (inner) } },
-                    3 => html! { h3 class="text-base font-semibold mt-5 mb-2" { (inner) } },
+                    1 => html! { h1 id=(id) class="text-xl font-bold mt-8 mb-4" { (inner) } },
+                    2 => html! { h2 id=(id) class="text-lg font-bold mt-6 mb-3" { (inner) } },
+                    3 => html! { h3 id=(id) class="text-base font-semibold mt-5 mb-2" { (inner) } },
                     4 => {
-                        html! { h4 class="text-sm font-semibold mt-4 mb-2 uppercase tracking-wide" { (inner) } }
+                        html! { h4 id=(id) class="text-sm font-semibold mt-4 mb-2 uppercase tracking-wide" { (inner) } }
                     }
-                    5 => html! { h5 class="text-sm font-medium mt-3 mb-1" { (inner) } },
+                    5 => html! { h5 id=(id) class="text-sm font-medium mt-3 mb-1" { (inner) } },
                     _ => {
-                        html! { h6 class="text-sm font-medium mt-3 mb-1 text-gray-500 dark:text-gray-400" { (inner) } }
+                        html! { h6 id=(id) class="text-sm font-medium mt-3 mb-1 text-gray-500 dark:text-gray-400" { (inner) } }
                     }
                 }
             }
@@ -471,6 +472,64 @@ pub fn markdown_to_html(source: &str) -> Markup {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct Heading {
+    pub level: u8,
+    pub text: String,
+    pub anchor: String,
+}
+
+/// Convert heading plain text to a URL-safe anchor string.
+pub fn heading_anchor(text: &str) -> String {
+    let mut anchor = String::with_capacity(text.len());
+    for ch in text.chars() {
+        if ch.is_alphanumeric() {
+            anchor.push(ch.to_ascii_lowercase());
+        } else if !anchor.ends_with('-') {
+            anchor.push('-');
+        }
+    }
+    anchor.trim_end_matches('-').to_owned()
+}
+
+/// Parse markdown once; return rendered HTML and extracted headings together.
+pub fn markdown_to_html_with_headings(source: &str) -> (Markup, Vec<Heading>) {
+    let parser = Parser::new_ext(
+        source,
+        Options::ENABLE_TABLES | Options::ENABLE_STRIKETHROUGH | Options::ENABLE_SMART_PUNCTUATION,
+    );
+    let tree = build_tree(parser);
+    let headings = collect_headings_from_tree(&tree);
+    let html = html! { div { (render_node(&tree)) } };
+    (html, headings)
+}
+
+fn collect_headings_from_tree(node: &MdNode) -> Vec<Heading> {
+    let mut out = Vec::new();
+    collect_headings_inner(node, &mut out);
+    out
+}
+
+fn collect_headings_inner(node: &MdNode, out: &mut Vec<Heading>) {
+    match node {
+        MdNode::Element(MdTag::Heading(level), children) => {
+            let text = collect_text(children);
+            let anchor = heading_anchor(&text);
+            out.push(Heading {
+                level: *level,
+                text,
+                anchor,
+            });
+        }
+        MdNode::Element(_, children) => {
+            for child in children {
+                collect_headings_inner(child, out);
+            }
+        }
+        _ => {}
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -569,5 +628,49 @@ mod tests {
         assert!(!html.contains("showSidebar"), "{html}");
         assert!(!html.contains("showList"), "{html}");
         assert!(!html.contains("goBack"), "{html}");
+    }
+
+    #[test]
+    fn test_heading_anchor_basic() {
+        assert_eq!(heading_anchor("Hello World"), "hello-world");
+    }
+
+    #[test]
+    fn test_heading_anchor_deduplicates_hyphens() {
+        assert_eq!(heading_anchor("Foo  Bar"), "foo-bar");
+        assert_eq!(heading_anchor("A - B"), "a-b");
+    }
+
+    #[test]
+    fn test_heading_anchor_trims_trailing_hyphen() {
+        assert_eq!(heading_anchor("Hello!"), "hello");
+    }
+
+    #[test]
+    fn test_heading_anchor_alphanumeric() {
+        assert_eq!(heading_anchor("Step 1: Setup"), "step-1-setup");
+    }
+
+    #[test]
+    fn test_markdown_to_html_with_headings_extracts_headings() {
+        let src = "# First\n\nBody.\n\n## Second\n\nMore body.";
+        let (html, headings) = markdown_to_html_with_headings(src);
+        assert_eq!(headings.len(), 2);
+        assert_eq!(headings[0].level, 1);
+        assert_eq!(headings[0].text, "First");
+        assert_eq!(headings[0].anchor, "first");
+        assert_eq!(headings[1].level, 2);
+        assert_eq!(headings[1].text, "Second");
+        assert_eq!(headings[1].anchor, "second");
+        let html_str = html.into_string();
+        assert!(html_str.contains(r#"id="first""#), "{html_str}");
+        assert!(html_str.contains(r#"id="second""#), "{html_str}");
+    }
+
+    #[test]
+    fn test_markdown_to_html_with_headings_empty() {
+        let src = "Just a paragraph.";
+        let (_, headings) = markdown_to_html_with_headings(src);
+        assert!(headings.is_empty());
     }
 }

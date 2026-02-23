@@ -14,6 +14,7 @@ pub struct Notebook {
     notes: Vec<Note>,
     stems: HashMap<String, usize>,
     tags: HashMap<String, Vec<String>>,
+    backlinks: HashMap<String, Vec<String>>,
 }
 
 impl Notebook {
@@ -49,11 +50,14 @@ impl Notebook {
             notes.push(note);
         }
 
+        let backlinks = build_backlinks(&notes);
+
         Ok(Notebook {
             root,
             notes,
             stems,
             tags,
+            backlinks,
         })
     }
 
@@ -89,7 +93,16 @@ impl Notebook {
                     .push(stem.to_owned());
             }
 
+            // Remove old backlinks contributed by this note, then re-add from new version
+            remove_outgoing_backlinks(&mut self.backlinks, stem);
+            let new_outgoing: Vec<String> = new_note.outgoing_links().to_vec();
+
             self.notes[idx] = new_note;
+
+            let from = stem.to_owned();
+            for target in new_outgoing {
+                self.backlinks.entry(target).or_default().push(from.clone());
+            }
         } else {
             // Walk to find the new file
             let md_files = discover_md_files(&self.root)?;
@@ -114,6 +127,14 @@ impl Notebook {
                     }
                     self.stems.insert(stem.to_owned(), idx);
                     self.notes.push(note);
+
+                    // Add outgoing links for the new note
+                    let outgoing: Vec<String> = self.notes[idx].outgoing_links().to_vec();
+                    let from = stem.to_owned();
+                    for target in outgoing {
+                        self.backlinks.entry(target).or_default().push(from.clone());
+                    }
+
                     break;
                 }
             }
@@ -139,6 +160,11 @@ impl Notebook {
                 }
             }
         }
+
+        // Clean up backlinks: remove outgoing links from this note, and remove
+        // any entries where this note is a target.
+        remove_outgoing_backlinks(&mut self.backlinks, stem);
+        self.backlinks.remove(stem);
 
         self.stems.remove(stem);
 
@@ -183,6 +209,14 @@ impl Notebook {
             .filter(move |note| tags.is_empty() || tags.iter().all(|tag| note.has(tag)))
     }
 
+    /// Return notes that wiki-link to `stem`.
+    pub fn backlinks(&self, stem: &str) -> Vec<&Note> {
+        self.backlinks
+            .get(stem)
+            .map(|sources| sources.iter().filter_map(|s| self.note(s)).collect())
+            .unwrap_or_default()
+    }
+
     /// Fuzzy search note titles, returning matches ranked by score.
     pub fn search_titles(
         &self,
@@ -217,6 +251,26 @@ impl Notebook {
             .collect::<Vec<_>>()
             .into_iter()
     }
+}
+
+/// Build a backlinks index: target_stem -> [source_stems].
+fn build_backlinks(notes: &[Note]) -> HashMap<String, Vec<String>> {
+    let mut index: HashMap<String, Vec<String>> = HashMap::new();
+    for note in notes {
+        let from = note.filename_stem().to_owned();
+        for target in note.outgoing_links() {
+            index.entry(target.clone()).or_default().push(from.clone());
+        }
+    }
+    index
+}
+
+/// Remove all backlink entries where `from_stem` is a source.
+fn remove_outgoing_backlinks(backlinks: &mut HashMap<String, Vec<String>>, from_stem: &str) {
+    for v in backlinks.values_mut() {
+        v.retain(|s| s != from_stem);
+    }
+    backlinks.retain(|_, v| !v.is_empty());
 }
 
 /// Read a single markdown file and parse it into a Note.
@@ -511,5 +565,56 @@ mod tests {
                 "stem {stem} unreachable after remove"
             );
         }
+    }
+
+    #[test]
+    fn test_backlinks() {
+        let dir = TempDir::new().unwrap();
+        fs::create_dir(dir.path().join(".zk")).unwrap();
+
+        fs::write(
+            dir.path().join("source.md"),
+            "# Source\n\nSee [target note](target) for details.",
+        )
+        .unwrap();
+
+        fs::write(
+            dir.path().join("target.md"),
+            "# Target\n\nThis note is linked from source.",
+        )
+        .unwrap();
+
+        let nb = Notebook::load(dir.path()).unwrap();
+        let backlinks = nb.backlinks("target");
+        assert_eq!(backlinks.len(), 1);
+        assert_eq!(backlinks[0].filename_stem(), "source");
+    }
+
+    #[test]
+    fn test_backlinks_empty() {
+        let dir = setup_notebook();
+        let nb = Notebook::load(dir.path()).unwrap();
+        // note1 doesn't link to note2, so note2 should have no backlinks
+        assert!(nb.backlinks("note2").is_empty());
+    }
+
+    #[test]
+    fn test_backlinks_cleared_on_remove() {
+        let dir = TempDir::new().unwrap();
+        fs::create_dir(dir.path().join(".zk")).unwrap();
+
+        fs::write(
+            dir.path().join("source.md"),
+            "# Source\n\nSee [target](target).",
+        )
+        .unwrap();
+
+        fs::write(dir.path().join("target.md"), "# Target\n\nBody.").unwrap();
+
+        let mut nb = Notebook::load(dir.path()).unwrap();
+        assert_eq!(nb.backlinks("target").len(), 1);
+
+        nb.remove("source");
+        assert!(nb.backlinks("target").is_empty());
     }
 }

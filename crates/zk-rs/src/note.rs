@@ -14,6 +14,7 @@ pub struct Note {
     pub(crate) word_count: usize,
     pub(crate) tags: Vec<String>,
     pub(crate) aliases: Vec<String>,
+    pub(crate) outgoing_links: Vec<String>,
     pub(crate) created: jiff::Timestamp,
     pub(crate) modified: jiff::Timestamp,
 }
@@ -73,6 +74,10 @@ impl Note {
 
     pub fn modified(&self) -> jiff::Timestamp {
         self.modified
+    }
+
+    pub fn outgoing_links(&self) -> &[String] {
+        &self.outgoing_links
     }
 
     pub fn has(&self, tag: &str) -> bool {

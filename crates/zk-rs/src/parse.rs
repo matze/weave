@@ -61,6 +61,8 @@ pub(crate) fn parse_note(
         }
     }
 
+    let outgoing_links = extract_wiki_link_stems(&body);
+
     let filename = path
         .file_name()
         .map(|f| f.to_string_lossy().into_owned())
@@ -88,6 +90,7 @@ pub(crate) fn parse_note(
         word_count,
         tags,
         aliases: frontmatter.aliases,
+        outgoing_links,
         created,
         modified,
     })
@@ -357,6 +360,54 @@ fn extract_hashtags(line: &str, tags: &mut Vec<String>) {
     }
 }
 
+/// Check if a markdown link URL is a wiki-link (bare stem or ./stem or ../stem).
+/// Mirrors the WIKI_LINK_RE pattern in weave/src/md.rs.
+fn wiki_link_stem(url: &str) -> Option<&str> {
+    let mut rest = url;
+    loop {
+        if rest.starts_with("../") {
+            rest = &rest[3..];
+        } else if rest.starts_with("./") {
+            rest = &rest[2..];
+        } else {
+            break;
+        }
+    }
+    if !rest.is_empty() && rest.chars().all(|c| c.is_alphanumeric() || c == '_') {
+        Some(rest)
+    } else {
+        None
+    }
+}
+
+/// Extract all wiki-link stems from a markdown body.
+/// Scans for `](url)` patterns; skips fenced code blocks.
+fn extract_wiki_link_stems(body: &str) -> Vec<String> {
+    let mut stems = Vec::new();
+    let mut in_code_block = false;
+
+    for line in body.lines() {
+        if line.trim_start().starts_with("```") {
+            in_code_block = !in_code_block;
+            continue;
+        }
+        if in_code_block {
+            continue;
+        }
+
+        let mut rest = line;
+        while let Some(pos) = rest.find("](") {
+            rest = &rest[pos + 2..];
+            let end = rest.find([')', '\n']).unwrap_or(rest.len());
+            if let Some(stem) = wiki_link_stem(&rest[..end]) {
+                stems.push(stem.to_owned());
+            }
+            rest = &rest[end..];
+        }
+    }
+    stems
+}
+
 /// Extract a list of strings from a YAML value (sequence or single string).
 fn extract_string_list(value: Option<&serde_yaml::Value>) -> Vec<String> {
     match value {
@@ -580,5 +631,44 @@ mod tests {
         let content = "# Expression problem\n\nA challenge in programming.\n\n:se:programming:";
         let tags = extract_inline_tags(content);
         assert_eq!(tags, vec!["se", "programming"]);
+    }
+
+    #[test]
+    fn test_wiki_link_stem_bare() {
+        assert_eq!(wiki_link_stem("abc123"), Some("abc123"));
+    }
+
+    #[test]
+    fn test_wiki_link_stem_relative() {
+        assert_eq!(wiki_link_stem("./abc123"), Some("abc123"));
+        assert_eq!(wiki_link_stem("../abc123"), Some("abc123"));
+        assert_eq!(wiki_link_stem("../../abc123"), Some("abc123"));
+    }
+
+    #[test]
+    fn test_wiki_link_stem_rejects_url() {
+        assert_eq!(wiki_link_stem("https://example.com"), None);
+        assert_eq!(wiki_link_stem("file.md"), None);
+    }
+
+    #[test]
+    fn test_extract_wiki_link_stems_basic() {
+        let body = "See [note one](abc) and [note two](./def).";
+        let stems = extract_wiki_link_stems(body);
+        assert_eq!(stems, vec!["abc", "def"]);
+    }
+
+    #[test]
+    fn test_extract_wiki_link_stems_skips_urls() {
+        let body = "See [external](https://example.com) and [note](abc).";
+        let stems = extract_wiki_link_stems(body);
+        assert_eq!(stems, vec!["abc"]);
+    }
+
+    #[test]
+    fn test_extract_wiki_link_stems_skips_code_blocks() {
+        let body = "Before.\n\n```\n[code](link_in_code)\n```\n\n[real](abc).";
+        let stems = extract_wiki_link_stems(body);
+        assert_eq!(stems, vec!["abc"]);
     }
 }
