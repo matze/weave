@@ -42,9 +42,9 @@ impl<'a> Splitter<'a> {
             if caps.name("tag").is_some() {
                 Some((m.start(), m.end(), Segment::Tag(m.as_str())))
             } else {
-                let trimmed = m
-                    .as_str()
-                    .trim_end_matches(|c: char| matches!(c, '.' | ',' | ';' | ':' | '!' | '?' | ')' | ']'));
+                let trimmed = m.as_str().trim_end_matches(|c: char| {
+                    matches!(c, '.' | ',' | ';' | ':' | '!' | '?' | ')' | ']')
+                });
                 let end = m.start() + trimmed.len();
                 Some((m.start(), end, Segment::Url(trimmed)))
             }
@@ -270,7 +270,7 @@ fn text_to_html(text: &str) -> Markup {
                     }
                 },
                 Segment::Url(url) => {
-                    a href=(url) class="text-sky-600 hover:underline" { (url) }
+                    a href=(url) class="text-sky-600 hover:underline font-semibold" { (url) span class="text-[0.8em] align-super" { "\u{2197}" } }
                 },
             }
         }
@@ -376,6 +376,7 @@ fn render_node(node: &MdNode) -> Markup {
             MdTag::ExternalLink(url) => html! {
                 a href=(url) class="text-sky-600 hover:underline font-semibold" {
                     (render_children(children))
+                    span class="text-[0.8em] align-super" { "\u{2197}" }
                 }
             },
             MdTag::Table => {
