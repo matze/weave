@@ -161,10 +161,11 @@ impl Notebook {
             }
         }
 
-        // Clean up backlinks: remove outgoing links from this note, and remove
-        // any entries where this note is a target.
+        // Clean up backlinks: remove outgoing links contributed by this note.
+        // Keep the target entry (backlinks[stem]) so that if the note is
+        // recreated (common with editors that delete+write), incoming
+        // backlinks from other notes are preserved.
         remove_outgoing_backlinks(&mut self.backlinks, stem);
-        self.backlinks.remove(stem);
 
         self.stems.remove(stem);
 
@@ -616,5 +617,40 @@ mod tests {
 
         nb.remove("source");
         assert!(nb.backlinks("target").is_empty());
+    }
+
+    #[test]
+    fn test_backlinks_survive_remove_recreate() {
+        // Editors like vim delete+recreate files on save. The incoming
+        // backlinks from other notes must survive this cycle.
+        let dir = TempDir::new().unwrap();
+        fs::create_dir(dir.path().join(".zk")).unwrap();
+
+        fs::write(
+            dir.path().join("source.md"),
+            "# Source\n\nSee [target](target).",
+        )
+        .unwrap();
+
+        fs::write(dir.path().join("target.md"), "# Target\n\nBody.").unwrap();
+
+        let mut nb = Notebook::load(dir.path()).unwrap();
+        assert_eq!(nb.backlinks("target").len(), 1);
+
+        // Simulate editor delete+recreate cycle
+        nb.remove("target");
+        assert!(nb.note("target").is_none());
+
+        fs::write(
+            dir.path().join("target.md"),
+            "# Target Updated\n\nNew body.",
+        )
+        .unwrap();
+        nb.reload("target").unwrap();
+
+        // Backlink from source must still be present
+        let backlinks = nb.backlinks("target");
+        assert_eq!(backlinks.len(), 1);
+        assert_eq!(backlinks[0].filename_stem(), "source");
     }
 }
