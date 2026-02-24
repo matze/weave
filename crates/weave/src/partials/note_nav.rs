@@ -112,7 +112,7 @@ fn toc_item(h: &Heading, min_level: u8) -> Markup {
     html! {
         li class={ (indent) " py-0.5" } {
             a href={ "#" (h.anchor) }
-                class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:underline truncate block"
+                class="text-sky-600 dark:text-sky-600 hover:underline truncate block"
             { (h.text) }
         }
     }
