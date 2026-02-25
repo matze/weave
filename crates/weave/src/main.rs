@@ -80,6 +80,10 @@ async fn do_login(
     }
 }
 
+async fn logout(jar: SignedCookieJar) -> (SignedCookieJar, Redirect) {
+    (jar.remove("jwt"), Redirect::to("/"))
+}
+
 enum WatchEvent {
     Modified(std::path::PathBuf),
     Removed(std::path::PathBuf),
@@ -198,6 +202,7 @@ async fn main() -> Result<()> {
         .route("/", get(pages::index::index))
         .route("/note/{stem}", get(pages::note::note))
         .route("/login", get(pages::login::login).post(do_login))
+        .route("/logout", get(logout))
         .route("/f/search", post(partials::search::search))
         .route(
             "/f/{stem}",

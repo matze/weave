@@ -17,7 +17,17 @@ pub(crate) async fn note(
 
     if !authenticated && !note.has("public") {
         return html! {
-            div class="h-screen flex items-center justify-center" {
+            div class="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0" {
+                div class="flex items-center text-xl" {
+                    span class="invisible font-black" { "\u{00a0}" }
+                    div class="ml-auto" {
+                        a href="/login" aria-label="Sign in" {
+                            (assets::icons::sign_in())
+                        }
+                    }
+                }
+            }
+            div class="flex-grow flex items-center justify-center" {
                 div class="flex flex-col items-center justify-center p-8" {
                     h2 class="text-xl font-bold" { "access denied" }
                 }
@@ -53,14 +63,25 @@ pub(crate) async fn note(
                     aria-label="Back to notes" {
                     (assets::icons::back())
                 }
-                h2 class="text-xl font-bold dark:text-white" { (title) }
-                @if authenticated {
-                    button
-                        class="cursor-pointer"
-                        hx-get={ "/f/" (stem) "/edit" }
-                        hx-target="#note-content"
-                        aria-label="Edit note" {
-                        (assets::icons::pencil())
+                h2 class="text-xl font-bold dark:text-white flex-grow" { (title) }
+                div class="flex items-center gap-4 ml-auto" {
+                    @if authenticated {
+                        button
+                            class="cursor-pointer"
+                            hx-get={ "/f/" (stem) "/edit" }
+                            hx-target="#note-content"
+                            aria-label="Edit note" {
+                            (assets::icons::pencil())
+                        }
+                    }
+                    @if authenticated {
+                        a href="/logout" aria-label="Sign out" {
+                            (assets::icons::sign_out())
+                        }
+                    } @else {
+                        a href="/login" aria-label="Sign in" {
+                            (assets::icons::sign_in())
+                        }
                     }
                 }
             }
