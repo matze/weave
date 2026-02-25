@@ -2,6 +2,8 @@
 
 use std::path::PathBuf;
 
+use pulldown_cmark::{Event, Parser};
+
 pub use zk_rs::Note;
 
 #[derive(thiserror::Error, Debug)]
@@ -91,13 +93,25 @@ pub trait NoteExt {
 
 impl NoteExt for Note {
     fn snippet(&self) -> String {
-        let body = self.body();
-
-        let snippet = match body.char_indices().nth(30) {
-            Some((byte_index, _)) => &body[0..byte_index],
-            None => body,
-        };
-
-        format!("{snippet}...")
+        Parser::new(self.body())
+            .scan(0, |len, event| {
+                if *len >= 40 {
+                    return None;
+                }
+                match event {
+                    Event::Text(t) | Event::Code(t) => {
+                        *len += t.len();
+                        Some(Some(t))
+                    }
+                    Event::SoftBreak | Event::HardBreak => {
+                        *len += 1;
+                        Some(Some(" ".into()))
+                    }
+                    _ => Some(None),
+                }
+            })
+            .flatten()
+            .map(|t| t.into_string())
+            .collect()
     }
 }

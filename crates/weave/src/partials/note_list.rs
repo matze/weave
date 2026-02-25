@@ -58,11 +58,11 @@ fn note_item(note: &Note) -> Markup {
     let (title_class, snippet_class) = match note {
         Note::Regular(_) | Note::Pinned(_) => (
             "text-md font-semibold text-gray-900 dark:text-white",
-            "text-sm text-gray-600 dark:text-gray-300 truncate",
+            "text-sm text-gray-600 dark:text-gray-300 truncate block",
         ),
         Note::Archived(_) => (
             "text-md font-semibold text-gray-400 dark:text-gray-500",
-            "text-sm text-gray-400 dark:text-gray-500 truncate",
+            "text-sm text-gray-400 dark:text-gray-500 truncate block",
         ),
     };
     let is_pinned = matches!(note, Note::Pinned(_));
@@ -77,7 +77,7 @@ fn note_item(note: &Note) -> Markup {
             hx-push-url={ "/note/" (note.filename_stem()) }
             onclick="showNote(event)" {
             div class="flex items-center justify-between" {
-                div {
+                div class="min-w-0" {
                     h3 class=(title_class) { (note.title()) }
                     p class=(snippet_class) { (note.snippet()) }
                 }
