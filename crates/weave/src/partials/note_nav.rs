@@ -27,7 +27,7 @@ pub(crate) fn note_nav(data: &NoteNavData) -> Markup {
     let min_level = data.headings.iter().map(|h| h.level).min().unwrap_or(1);
 
     html! {
-        nav class="hidden lg:flex flex-col w-56 flex-shrink-0 border-l border-gray-200 dark:border-gray-700 overflow-y-auto text-sm pt-4" {
+        nav class="hidden lg:flex flex-col w-56 flex-shrink-0 border-gray-200 dark:border-gray-700 overflow-y-auto text-sm pt-4" {
 
             @if !data.headings.is_empty() {
                 div class="px-4 py-2" {
