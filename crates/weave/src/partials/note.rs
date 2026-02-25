@@ -36,16 +36,18 @@ pub(crate) async fn note(
     }
 
     let backlinks = notebook.lock().unwrap().backlinks(&stem, authenticated);
-    let outgoing_links = notebook.lock().unwrap().outgoing_links(note.outgoing_links(), authenticated);
+    let outgoing_links = notebook
+        .lock()
+        .unwrap()
+        .outgoing_links(note.outgoing_links(), authenticated);
     let tags = note.tags().to_vec();
     let body = note.body().to_owned();
     let title = note.title().to_owned();
 
-    let (rendered, headings) = tokio::task::spawn_blocking(move || {
-        md::markdown_to_html_with_headings(&body)
-    })
-    .await
-    .expect("join working");
+    let (rendered, headings) =
+        tokio::task::spawn_blocking(move || md::markdown_to_html_with_headings(&body))
+            .await
+            .expect("join working");
 
     let nav_data = NoteNavData {
         headings,
@@ -71,7 +73,7 @@ pub(crate) async fn note(
                             hx-get={ "/f/" (stem) "/edit" }
                             hx-target="#note-content"
                             aria-label="Edit note" {
-                            (assets::icons::pencil())
+                            (assets::icons::edit())
                         }
                     }
                     @if authenticated {

@@ -117,7 +117,7 @@ pub(crate) async fn save(
                         hx-get={ "/f/" (stem) "/edit" }
                         hx-target="#note-content"
                         aria-label="Edit note" {
-                        (assets::icons::pencil())
+                        (assets::icons::edit())
                     }
                 }
             }
