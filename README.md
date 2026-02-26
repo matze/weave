@@ -9,7 +9,8 @@ opinionated. It features
 - cross-linking and note editing
 - syntax highlighting of code blocks
 - real-time file watching (external edits show up immediately)
-- light and dark mode
+- light and dark mode support
+- focus mode
 
 <p align="center"><strong><a href="https://weave.bloerg.net/note/weave">DEMO</a></strong></p>
 

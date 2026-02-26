@@ -27,7 +27,7 @@ signing in. This is useful for sharing individual notes with others.
 
 ### Searching
 
-Press <kbd>f</kbd> or click the "Filter notes..." box to search. Weave uses
+Press <kbd>s</kbd> or click the "Filter notes..." box to search. Weave uses
 fuzzy matching against note titles, so you do not need to type the exact title.
 Prefix a word with `#` to filter by tag instead, e.g. `#public`. To leave the
 search bar, press <kbd>esc</kbd>.
@@ -45,6 +45,11 @@ Weave watches the notebook directory for changes, so edits made outside of Weave
 
 Use <kbd>j</kbd> to move to the next note and <kbd>k</kbd> to move to the
 previous note.
+
+### Focus mode
+
+For a distraction-free reading experience enable focus mode with the
+<kbd>f</kbd> key.
 
 
 ## Special tags

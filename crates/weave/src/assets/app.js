@@ -48,10 +48,33 @@ function goBack() {
     }
 }
 
+function toggleFocus() {
+    if (window.innerWidth < 768) return;
+    var prose = document.querySelector('#note-content .prose');
+    if (!document.body.classList.contains('focus-mode')) {
+        if (prose) {
+            document.body.style.setProperty('--focus-prose-width', prose.offsetWidth + 'px');
+        }
+        document.body.classList.add('focus-mode');
+    } else {
+        document.body.classList.remove('focus-mode');
+        document.getElementById('sidebar').addEventListener('transitionend', function handler() {
+            document.body.style.removeProperty('--focus-prose-width');
+            document.getElementById('sidebar').removeEventListener('transitionend', handler);
+        });
+    }
+}
+
 document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && document.activeElement === document.getElementById('filter-input')) {
-        document.activeElement.blur();
-        return;
+    if (e.key === 'Escape') {
+        if (document.body.classList.contains('focus-mode')) {
+            toggleFocus();
+            return;
+        }
+        if (document.activeElement === document.getElementById('filter-input')) {
+            document.activeElement.blur();
+            return;
+        }
     }
     var t = document.activeElement.tagName;
     if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return;
@@ -59,6 +82,9 @@ document.addEventListener('keydown', function(e) {
         var btn = document.querySelector('[aria-label="Edit note"]');
         if (btn) btn.click();
     } else if (e.key === 'f') {
+        e.preventDefault();
+        toggleFocus();
+    } else if (e.key === 's') {
         e.preventDefault();
         document.getElementById('filter-input').focus();
     } else if (e.key === 'j' || e.key === 'k') {
