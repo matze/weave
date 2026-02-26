@@ -109,7 +109,7 @@
     background-color: var(--color-white);
   }
 
-  #note-content .prose {
+  body.focus-mode #note-content .prose {
     margin: 0 auto;
     max-width: var(--focus-prose-width, 65ch);
   }
