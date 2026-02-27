@@ -430,7 +430,7 @@ fn render_node(node: &MdNode) -> Markup {
             MdTag::ExternalLink(url) => html! {
                 a href=(url) class="text-sky-600 hover:underline font-semibold" {
                     (render_children(children))
-                    span class="text-[0.8em] align-super" { "\u{2197}" }
+                    span class="text-[0.8em] align-super" { "\u{2197}\u{FE0E}" }
                 }
             },
             MdTag::Table => {
