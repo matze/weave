@@ -3,6 +3,7 @@ use axum::http::StatusCode;
 use maud::{Markup, html};
 
 use crate::extract::Authenticated;
+use crate::partials::note_nav::{NoteNavData, note_nav};
 use crate::{Notebook, assets, md};
 
 const HX_TRIGGER: axum::http::HeaderName = axum::http::HeaderName::from_static("hx-trigger");
@@ -80,7 +81,7 @@ pub(crate) async fn save(
 
     let stem_clone = stem.clone();
 
-    let note = tokio::task::spawn_blocking(move || {
+    let (title, rendered, nav_data) = tokio::task::spawn_blocking(move || {
         let mut notebook = notebook.lock().unwrap();
 
         let file_path = notebook
@@ -95,7 +96,23 @@ pub(crate) async fn save(
             .reload(&stem_clone)
             .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-        notebook.note(&stem_clone).ok_or(StatusCode::NOT_FOUND)
+        let note = notebook.note(&stem_clone).ok_or(StatusCode::NOT_FOUND)?;
+        let backlinks = notebook.backlinks(&stem_clone, true);
+        let outgoing_links = notebook.outgoing_links(note.outgoing_links(), true);
+        let tags = note.tags().to_vec();
+        let title = note.title().to_owned();
+        let body = note.body().to_owned();
+
+        let (rendered, headings) = md::markdown_to_html_with_headings(&body);
+
+        let nav_data = NoteNavData {
+            headings,
+            outgoing_links,
+            backlinks,
+            tags,
+        };
+
+        Ok::<_, StatusCode>((title, rendered, nav_data))
     })
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)??;
@@ -103,7 +120,7 @@ pub(crate) async fn save(
     Ok((
         [(HX_TRIGGER, "notes-updated")],
         html! {
-            div class="p-4 border-b border-gray-200 dark:border-gray-700" {
+            div class="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0" {
                 div class="flex items-center gap-3" {
                     button
                         class="md:hidden p-1 -ml-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -111,23 +128,27 @@ pub(crate) async fn save(
                         aria-label="Back to notes" {
                         (assets::icons::back())
                     }
-                    h2 class="text-xl font-bold dark:text-white" { (note.title()) }
-                    button
-                        class="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
-                        hx-get={ "/f/" (stem) "/edit" }
-                        hx-target="#note-content"
-                        aria-label="Edit note" {
-                        (assets::icons::edit())
+                    h2 class="text-xl font-bold dark:text-white flex-grow" { (title) }
+                    div class="flex items-center gap-4 ml-auto" {
+                        button
+                            class="cursor-pointer"
+                            hx-get={ "/f/" (stem) "/edit" }
+                            hx-target="#note-content"
+                            aria-label="Edit note" {
+                            (assets::icons::edit())
+                        }
+                        a href="/logout" aria-label="Sign out" {
+                            (assets::icons::sign_out())
+                        }
                     }
                 }
             }
 
-            div class="flex-grow px-4 pt-6 pb-4 overflow-y-auto" {
-                div class="prose dark:prose-invert" {
-                    (tokio::task::spawn_blocking(move || md::markdown_to_html(note.body()))
-                        .await
-                        .expect("join working"))
+            div class="flex flex-row flex-grow overflow-hidden min-h-0" {
+                div class="flex-grow px-4 pt-6 pb-4 overflow-y-auto min-w-0" {
+                    div class="prose dark:prose-invert" { (rendered) }
                 }
+                (note_nav(&nav_data))
             }
         },
     ))
