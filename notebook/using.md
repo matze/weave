@@ -2,7 +2,7 @@
 
 ## Starting the server
 
-See [Installing](install) for build instructions and environment variables. Once
+See [installation](install) for build instructions and environment variables. Once
 built, start the server with:
 
 ```bash
@@ -22,8 +22,9 @@ Weave is a single-user application. Set `WEAVE_PASSWORD` to require sign-in.
 When signed in you can view and edit all notes. Without a password, login is
 disabled entirely.
 
-Tagging a note with `#public` makes it viewable (but not editable) without
-signing in. This is useful for sharing individual notes with others.
+> [!TIP]
+> Tagging a note with `#public` makes it viewable (but not editable) without
+> signing in. This is useful for sharing individual notes with others.
 
 ### Searching
 

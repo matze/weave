@@ -2,12 +2,13 @@
 
 Weave is a **self-hosted**, **single-user** and **web-based** frontend to view
 and edit [zk](https://github.com/zk-org/zk) notes. It is lightweight, quick and
-opinionated. It features
+opinionated and features
 
 - a single binary with a built-in zk re-implementation (no `zk` binary needed)
 - fuzzy search across all note titles and tags
 - note editing
-- syntax highlighting of code blocks
+- code syntax highlighting
+- admonition support via GitHub Flavored Markdown
 - real-time file watching (external edits show up immediately)
 - light and dark mode
 - special tags for access control and ordering

@@ -15,11 +15,13 @@
   line-height: inherit;
 }
 
-/* Tighten spacing inside blockquotes */
-.prose :where(blockquote) > :first-child {
+/* Tighten spacing inside blockquotes and admonitions */
+.prose :where(blockquote, [class*="border-s-4"]) > :first-child,
+.prose :where(blockquote, [class*="border-s-4"]) > div > :first-child {
   margin-top: 0;
 }
-.prose :where(blockquote) > :last-child {
+.prose :where(blockquote, [class*="border-s-4"]) > :last-child,
+.prose :where(blockquote, [class*="border-s-4"]) > div > :last-child {
   margin-bottom: 0;
 }
 

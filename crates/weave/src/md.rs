@@ -3,7 +3,7 @@
 use std::sync::LazyLock;
 
 use maud::{Markup, PreEscaped, html};
-use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag as CmarkTag};
+use pulldown_cmark::{BlockQuoteKind, CodeBlockKind, Event, Options, Parser, Tag as CmarkTag};
 use syntect::html::{ClassStyle, ClassedHTMLGenerator};
 use syntect::parsing::SyntaxSet;
 
@@ -92,6 +92,7 @@ enum MdTag {
     Paragraph,
     Heading(u8),
     BlockQuote,
+    Admonition(BlockQuoteKind),
     CodeBlock(Option<String>),
     OrderedList,
     UnorderedList,
@@ -134,6 +135,7 @@ fn build_tree(parser: Parser) -> MdNode {
                 let md_tag = match tag {
                     CmarkTag::Paragraph => MdTag::Paragraph,
                     CmarkTag::Heading { level, .. } => MdTag::Heading(level as u8),
+                    CmarkTag::BlockQuote(Some(kind)) => MdTag::Admonition(kind),
                     CmarkTag::BlockQuote(_) => MdTag::BlockQuote,
                     CmarkTag::CodeBlock(kind) => {
                         let lang = match kind {
@@ -326,6 +328,58 @@ fn render_node(node: &MdNode) -> Markup {
                     (render_children(children))
                 }
             },
+            MdTag::Admonition(kind) => {
+                let (border, bg, text_color, icon, label) = match kind {
+                    BlockQuoteKind::Note => (
+                        "border-blue-400 dark:border-blue-500",
+                        "bg-blue-50 dark:bg-blue-950",
+                        "text-blue-700 dark:text-blue-300",
+                        r#"<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>"#,
+                        "Note",
+                    ),
+                    BlockQuoteKind::Tip => (
+                        "border-green-400 dark:border-green-500",
+                        "bg-green-50 dark:bg-green-950",
+                        "text-green-700 dark:text-green-300",
+                        r#"<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5C8.26 12.26 8.72 13.02 8.91 14"/></svg>"#,
+                        "Tip",
+                    ),
+                    BlockQuoteKind::Important => (
+                        "border-purple-400 dark:border-purple-500",
+                        "bg-purple-50 dark:bg-purple-950",
+                        "text-purple-700 dark:text-purple-300",
+                        r#"<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>"#,
+                        "Important",
+                    ),
+                    BlockQuoteKind::Warning => (
+                        "border-yellow-400 dark:border-yellow-500",
+                        "bg-yellow-50 dark:bg-yellow-950",
+                        "text-yellow-700 dark:text-yellow-300",
+                        r#"<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>"#,
+                        "Warning",
+                    ),
+                    BlockQuoteKind::Caution => (
+                        "border-red-400 dark:border-red-500",
+                        "bg-red-50 dark:bg-red-950",
+                        "text-red-700 dark:text-red-300",
+                        r#"<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>"#,
+                        "Caution",
+                    ),
+                };
+                let container_class = format!("border-s-4 {border} {bg} p-4 rounded my-4");
+                let title_class = format!("{text_color} font-semibold mb-2 flex items-center gap-2");
+                html! {
+                    div class=(container_class) {
+                        div class=(title_class) {
+                            (PreEscaped(icon))
+                            (label)
+                        }
+                        div class="text-gray-800 dark:text-gray-200" {
+                            (render_children(children))
+                        }
+                    }
+                }
+            },
             MdTag::CodeBlock(lang) => {
                 let code = collect_text(children);
                 let pre_class = "bg-gray-100 dark:bg-gray-900 p-4 rounded my-6 overflow-x-auto font-mono text-sm leading-relaxed";
@@ -466,7 +520,7 @@ fn highlight_code(source: &str, lang: Option<&str>) -> Option<String> {
 pub fn markdown_to_html(source: &str) -> Markup {
     let parser = Parser::new_ext(
         source,
-        Options::ENABLE_TABLES | Options::ENABLE_STRIKETHROUGH | Options::ENABLE_SMART_PUNCTUATION,
+        Options::ENABLE_TABLES | Options::ENABLE_STRIKETHROUGH | Options::ENABLE_SMART_PUNCTUATION | Options::ENABLE_GFM,
     );
 
     let tree = build_tree(parser);
@@ -500,7 +554,7 @@ pub fn heading_anchor(text: &str) -> String {
 pub fn markdown_to_html_with_headings(source: &str) -> (Markup, Vec<Heading>) {
     let parser = Parser::new_ext(
         source,
-        Options::ENABLE_TABLES | Options::ENABLE_STRIKETHROUGH | Options::ENABLE_SMART_PUNCTUATION,
+        Options::ENABLE_TABLES | Options::ENABLE_STRIKETHROUGH | Options::ENABLE_SMART_PUNCTUATION | Options::ENABLE_GFM,
     );
     let tree = build_tree(parser);
     let headings = collect_headings_from_tree(&tree);
