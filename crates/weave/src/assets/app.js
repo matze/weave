@@ -57,9 +57,17 @@ function toggleFocus() {
         }
         document.body.classList.add('focus-mode');
     } else {
+        if (prose) {
+            prose.style.margin = '0 auto';
+            prose.style.maxWidth = document.body.style.getPropertyValue('--focus-prose-width') || '65ch';
+        }
         document.body.classList.remove('focus-mode');
         document.getElementById('sidebar').addEventListener('transitionend', function handler() {
             document.body.style.removeProperty('--focus-prose-width');
+            if (prose) {
+                prose.style.margin = '';
+                prose.style.maxWidth = '';
+            }
             document.getElementById('sidebar').removeEventListener('transitionend', handler);
         });
     }
