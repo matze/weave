@@ -128,6 +128,12 @@ window.addEventListener('popstate', function() {
 
 document.addEventListener('htmx:historyRestore', function() {
     syncView(true);
+    var filterInput = document.getElementById('filter-input');
+    var filterClear = document.getElementById('filter-clear');
+    if (filterInput && filterClear) {
+        filterClear.classList.toggle('hidden', !filterInput.value);
+        htmx.ajax('POST', '/f/search', {target: '#search-list', values: {query: filterInput.value}});
+    }
 });
 
 document.addEventListener('htmx:afterSettle', function(e) {
