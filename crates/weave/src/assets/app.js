@@ -118,7 +118,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-window.addEventListener('popstate', function() { syncView(true); });
+window.addEventListener('popstate', function() {
+    var stem = stemFromUrl();
+    if (stem) {
+        htmx.ajax('GET', '/f/' + encodeURIComponent(stem), {target: '#note-content'});
+    }
+    syncView(true);
+});
 
 document.addEventListener('htmx:historyRestore', function() {
     syncView(true);
