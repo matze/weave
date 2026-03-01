@@ -18,9 +18,15 @@ pub(crate) async fn note(
     if !authenticated && !note.has("public") {
         return html! {
             div class="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0" {
-                div class="flex items-center text-xl" {
-                    span class="invisible font-black" { "\u{00a0}" }
-                    div class="ml-auto" {
+                div class="flex items-center gap-3" {
+                    button
+                        class="md:hidden p-1 -ml-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onclick="goBack()"
+                        aria-label="Back to notes" {
+                        (assets::icons::back())
+                    }
+                    span class="invisible font-black text-xl flex-grow" { "\u{00a0}" }
+                    div class="flex items-center gap-4 ml-auto" {
                         a href="/login" aria-label="Sign in" {
                             (assets::icons::sign_in())
                         }
@@ -28,8 +34,8 @@ pub(crate) async fn note(
                 }
             }
             div class="flex-grow flex items-center justify-center" {
-                div class="flex flex-col items-center justify-center p-8" {
-                    h2 class="text-xl font-bold" { "access denied" }
+                div class="flex flex-col items-center justify-center p-8 text-center" {
+                    h2 class="text-xl font-bold text-gray-400 dark:text-gray-500" { "access denied" }
                 }
             }
         };

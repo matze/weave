@@ -129,3 +129,34 @@ document.addEventListener('htmx:afterSettle', function(e) {
         syncView(false);
     }
 });
+
+function showNoteError(message) {
+    var nc = document.getElementById('note-content');
+    if (!nc) return;
+    nc.innerHTML =
+        '<div class="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">' +
+          '<div class="flex items-center gap-3">' +
+            '<button class="md:hidden p-1 -ml-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700" onclick="goBack()" aria-label="Back to notes">' +
+              '<svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>' +
+            '</button>' +
+            '<span class="invisible font-black text-xl flex-grow">\u00a0</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="flex-grow flex items-center justify-center">' +
+          '<div class="flex flex-col items-center justify-center p-8 text-center">' +
+            '<h2 class="text-xl font-bold text-gray-400 dark:text-gray-500">' + message + '</h2>' +
+          '</div>' +
+        '</div>';
+}
+
+document.addEventListener('htmx:sendError', function(e) {
+    if (e.detail.target && e.detail.target.id === 'note-content') {
+        showNoteError('note could not be loaded');
+    }
+});
+
+document.addEventListener('htmx:responseError', function(e) {
+    if (e.detail.target && e.detail.target.id === 'note-content') {
+        showNoteError('note could not be loaded');
+    }
+});
