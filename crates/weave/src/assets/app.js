@@ -5,8 +5,7 @@ function stemFromUrl() {
 
 function syncView(scroll) {
     var stem = stemFromUrl();
-    document.getElementById('sidebar').classList.toggle('mobile-hidden', !!stem);
-    document.getElementById('note-content').classList.toggle('mobile-visible', !!stem);
+    document.body.toggleAttribute('data-note', !!stem);
     document.querySelectorAll('.note-item.active-note').forEach(function(el) {
         el.classList.remove('active-note');
     });
@@ -28,48 +27,46 @@ function showNote(e) {
         });
         e.currentTarget.classList.add('active-note');
         e.currentTarget.style.position = 'relative';
+        document.body.dataset.note = '1';
     }
 }
 
 function showList() {
-    document.getElementById('sidebar').classList.remove('mobile-hidden');
-    document.getElementById('note-content').classList.remove('mobile-visible');
+    delete document.body.dataset.note;
 }
 
-var hasAppHistory = location.pathname === '/';
-
-document.addEventListener('htmx:pushedIntoHistory', function() { hasAppHistory = true; });
-
 function goBack() {
-    if (hasAppHistory) {
-        history.back();
-    } else {
-        location.href = '/';
-    }
+    if (history.length > 1) history.back();
+    else location.href = '/';
 }
 
 function toggleFocus() {
     if (window.innerWidth < 768) return;
     var prose = document.querySelector('#note-content .prose');
-    if (!document.body.classList.contains('focus-mode')) {
+    if (document.body.classList.contains('focus-mode')) {
+        if (prose) {
+            prose.style.maxWidth = prose.offsetWidth + 'px';
+            prose.style.marginLeft = getComputedStyle(prose).marginLeft;
+            prose.style.marginRight = getComputedStyle(prose).marginRight;
+        }
+        document.body.classList.remove('focus-mode');
+        if (prose) {
+            requestAnimationFrame(function() {
+                prose.style.marginLeft = '';
+                prose.style.marginRight = '';
+            });
+            document.getElementById('sidebar').addEventListener('transitionend', function handler(e) {
+                if (e.propertyName === 'width') {
+                    prose.style.maxWidth = '';
+                    document.getElementById('sidebar').removeEventListener('transitionend', handler);
+                }
+            });
+        }
+    } else {
         if (prose) {
             document.body.style.setProperty('--focus-prose-width', prose.offsetWidth + 'px');
         }
         document.body.classList.add('focus-mode');
-    } else {
-        if (prose) {
-            prose.style.margin = '0 auto';
-            prose.style.maxWidth = document.body.style.getPropertyValue('--focus-prose-width') || '65ch';
-        }
-        document.body.classList.remove('focus-mode');
-        document.getElementById('sidebar').addEventListener('transitionend', function handler() {
-            document.body.style.removeProperty('--focus-prose-width');
-            if (prose) {
-                prose.style.margin = '';
-                prose.style.maxWidth = '';
-            }
-            document.getElementById('sidebar').removeEventListener('transitionend', handler);
-        });
     }
 }
 
@@ -107,17 +104,21 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-document.addEventListener('DOMContentLoaded', function() { syncView(true); });
+document.addEventListener('DOMContentLoaded', function() {
+    syncView(true);
+    var filterInput = document.getElementById('filter-input');
+    var filterClear = document.getElementById('filter-clear');
+    filterInput.addEventListener('input', function() {
+        filterClear.classList.toggle('hidden', !this.value);
+    });
+    filterClear.addEventListener('click', function() {
+        filterInput.value = '';
+        htmx.ajax('POST', '/f/search', {target: '#search-list', values: {query: ''}});
+        filterClear.classList.add('hidden');
+    });
+});
 
 window.addEventListener('popstate', function() { syncView(true); });
-
-document.addEventListener('htmx:beforeHistorySave', function() {
-    // Only sync mobile classes for the snapshot; skip active-note
-    // to avoid re-marking the old note (showNote already set it).
-    var stem = stemFromUrl();
-    document.getElementById('sidebar').classList.toggle('mobile-hidden', !!stem);
-    document.getElementById('note-content').classList.toggle('mobile-visible', !!stem);
-});
 
 document.addEventListener('htmx:historyRestore', function() {
     syncView(true);

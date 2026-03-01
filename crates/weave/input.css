@@ -59,16 +59,12 @@
 }
 
 @media (max-width: 767px) {
-  #sidebar.mobile-hidden {
+  body[data-note] #sidebar {
     display: none;
   }
 
-  #note-content {
+  body:not([data-note]) #note-content {
     display: none;
-  }
-
-  #note-content.mobile-visible {
-    display: flex;
   }
 }
 
@@ -109,6 +105,10 @@
 
   body.focus-mode #note-content {
     background-color: var(--color-white);
+  }
+
+  #note-content .prose {
+    transition: margin 0.3s ease;
   }
 
   body.focus-mode #note-content .prose {

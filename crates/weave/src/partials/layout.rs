@@ -21,9 +21,9 @@ pub(crate) fn layout(
         html lang="en" {
             (partials::head::head())
 
-            body class="font-sans bg-gray-100 dark:bg-gray-900 text-black dark:text-white" {
+            body class="font-sans bg-gray-100 dark:bg-gray-900 text-black dark:text-white" data-note?[show_note] {
               div class="max-w-7xl mx-auto flex flex-col md:flex-row h-screen bg-white dark:bg-gray-800" {
-                div id="sidebar" class={"w-full md:w-80 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-y-auto flex-shrink-0 h-screen md:h-auto" @if show_note { " mobile-hidden" }} {
+                div id="sidebar" class="w-full md:w-80 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-y-auto flex-shrink-0 h-screen md:h-auto" {
                     div class="p-4 border-b border-gray-200 dark:border-gray-700" {
                         div class="flex items-center" {
                             span class="text-xl font-black italic text-transparent bg-clip-text bg-linear-to-r/oklab from-[#5bc0e0] to-[#c060d0]" {"weave"}
@@ -54,13 +54,9 @@ pub(crate) fn layout(
                                 {}
 
                             button #filter-clear type="button"
-                                class="absolute cursor-pointer right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hidden"
-                                onclick="let i=document.getElementById('filter-input');i.value='';htmx.ajax('POST','/f/search',{target:'#search-list',values:{query:''}});this.classList.add('hidden')" {
+                                class="absolute cursor-pointer right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hidden" {
                                     (assets::icons::cancel())
                                 }
-                        }
-                        script {
-                            (maud::PreEscaped("document.getElementById('filter-input').addEventListener('input',function(){document.getElementById('filter-clear').classList.toggle('hidden',!this.value)})"))
                         }
                     }
 
@@ -69,7 +65,7 @@ pub(crate) fn layout(
                     }
                 }
 
-                div class={"flex flex-grow flex-col overflow-y-auto h-screen md:h-auto md:basis-1/2" @if show_note { " mobile-visible" }} id="note-content" {
+                div class="flex flex-grow flex-col overflow-y-auto h-screen md:h-auto md:basis-1/2" id="note-content" {
                     @if content.0.is_empty() {
                         div class="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0" {
                             div class="flex items-center text-xl" {
