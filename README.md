@@ -49,6 +49,7 @@ instance can be accessed at https://weave.bloerg.net.
 | `ZK_NOTEBOOK_DIR` | Path to the zk notebook directory | (required) |
 | `WEAVE_PASSWORD` | Password for signing in | (empty, login disabled) |
 | `WEAVE_PORT` | Port the server listens on | `8000` |
+| `WEAVE_ATTACHMENTS` | Subdirectory inside `ZK_NOTEBOOK_DIR` to serve as static files (e.g. `media`) | (disabled) |
 
 
 ## License

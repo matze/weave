@@ -1,6 +1,6 @@
 //! Interface with the zk notebook via zk-rs.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use pulldown_cmark::{Event, Parser};
 
@@ -10,6 +10,8 @@ pub use zk_rs::Note;
 pub enum Error {
     #[error("failed to convert env var: {0}")]
     Var(#[from] std::env::VarError),
+    #[error("attachment path is not a subdirectory of the notebook")]
+    InvalidAttachmentPath,
     #[error("zk error: {0}")]
     Zk(#[from] zk_rs::Error),
 }
@@ -25,6 +27,18 @@ impl Notebook {
         let path = PathBuf::from(std::env::var("ZK_NOTEBOOK_DIR")?);
         let inner = zk_rs::Notebook::load(&path)?;
         Ok(Self { path, inner })
+    }
+
+    /// Get the path to the attachments based on the `ZK_NOTEBOOK_DIR` and the given `subdir`.
+    /// Returns an error if subdir is not actually a subdir (i.e. ../../../foo).
+    pub fn attachments(&self, subdir: &Path) -> Result<PathBuf, Error> {
+        let path = self.path.join(subdir);
+
+        if !path.starts_with(&self.path) {
+            return Err(Error::InvalidAttachmentPath);
+        }
+
+        Ok(path)
     }
 
     /// Reload the note with the given stem.

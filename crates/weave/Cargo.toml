@@ -25,7 +25,7 @@ tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread"] }
 tracing = "0.1.41"
 tracing-subscriber = "0.3.19"
 zk-rs = { path = "../zk-rs" }
-tower-http = { version = "0.6.8", features = ["compression-full", "trace"] }
+tower-http = { version = "0.6.8", features = ["compression-full", "fs", "trace"] }
 tower = "0.5.3"
 
 [build-dependencies]

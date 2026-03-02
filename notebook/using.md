@@ -53,6 +53,25 @@ For a distraction-free reading experience enable focus mode with the
 <kbd>f</kbd> key.
 
 
+## Attachments
+
+If your notebook contains images or other files in a subdirectory, set
+`WEAVE_ATTACHMENTS` to that subdirectory so Weave serves them. For example, with
+a layout like:
+
+```
+notebook/
+  note.md
+  media/
+    photo.jpg
+```
+
+Start Weave with `WEAVE_ATTACHMENTS=media` and reference the image from a note
+as `![photo](media/photo.jpg)`. Weave makes relative image paths root-absolute
+so they resolve correctly regardless of the page URL. Nested paths like
+`WEAVE_ATTACHMENTS=assets/img` work as well.
+
+
 ## Special tags
 
 Zk uses [tags][] to group and find notes of a related topic. Weave adds special

@@ -479,6 +479,11 @@ fn render_node(node: &MdNode) -> Markup {
                 } else {
                     Some(title.as_str())
                 };
+                let url = if !url.starts_with('/') && !url.starts_with("http://") && !url.starts_with("https://") {
+                    format!("/{url}")
+                } else {
+                    url.clone()
+                };
                 html! { img src=(url) alt=(alt) title=[title]; }
             }
         },

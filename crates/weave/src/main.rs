@@ -7,6 +7,7 @@ mod partials;
 mod zk;
 
 use std::net::{Ipv4Addr, SocketAddr};
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex, mpsc};
 
 use anyhow::Result;
@@ -22,6 +23,7 @@ use notify::{EventKind, Watcher};
 use serde::Deserialize;
 use tower::ServiceBuilder;
 use tower_http::compression::CompressionLayer;
+use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 
 type Notebook = Arc<Mutex<zk::Notebook>>;
@@ -187,6 +189,16 @@ async fn main() -> Result<()> {
         .unwrap_or(8000);
 
     let notebook = zk::Notebook::load()?;
+
+    let attachments = std::env::var("WEAVE_ATTACHMENTS")
+        .ok()
+        .map(|s| PathBuf::from(s))
+        .map(|subdir| {
+            let fs_path = notebook.attachments(&subdir)?;
+            Ok::<_, zk::Error>((subdir, fs_path))
+        })
+        .transpose()?;
+
     let issuer = jwt::Issuer::new()?;
     let key = Key::generate();
     let notebook = Arc::new(Mutex::new(notebook));
@@ -198,7 +210,7 @@ async fn main() -> Result<()> {
         password,
     };
 
-    let app = Router::new()
+    let mut app = Router::new()
         .route("/", get(pages::index::index))
         .route("/note/{stem}", get(pages::note::note))
         .route("/login", get(pages::login::login).post(do_login))
@@ -215,12 +227,18 @@ async fn main() -> Result<()> {
         .route("/favicon.svg", get(assets::favicon))
         .route("/highlight.css", get(assets::highlight_css))
         .route("/htmx.2.0.4.min.js", get(assets::htmx_js))
-        .layer(
-            ServiceBuilder::new()
-                .layer(CompressionLayer::new())
-                .layer(TraceLayer::new_for_http()),
-        )
         .with_state(state);
+
+    if let Some((url_path, fs_path)) = attachments {
+        let url_path = format!("/{}", url_path.display());
+        app = app.nest_service(&url_path, ServeDir::new(fs_path));
+    }
+
+    let app = app.layer(
+        ServiceBuilder::new()
+            .layer(CompressionLayer::new())
+            .layer(TraceLayer::new_for_http()),
+    );
 
     let addr = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), port);
     let listener = tokio::net::TcpListener::bind(addr).await?;
