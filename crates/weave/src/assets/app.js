@@ -106,16 +106,23 @@ document.addEventListener('keydown', function(e) {
 
 document.addEventListener('DOMContentLoaded', function() {
     syncView(true);
-    var filterInput = document.getElementById('filter-input');
-    var filterClear = document.getElementById('filter-clear');
-    filterInput.addEventListener('input', function() {
-        filterClear.classList.toggle('hidden', !this.value);
-    });
-    filterClear.addEventListener('click', function() {
+});
+
+// Use event delegation so listeners survive HTMX history cache restores
+// which replace DOM elements and lose directly-bound listeners.
+document.addEventListener('input', function(e) {
+    if (e.target.id === 'filter-input') {
+        document.getElementById('filter-clear').classList.toggle('hidden', !e.target.value);
+    }
+});
+
+document.addEventListener('click', function(e) {
+    if (e.target.closest('#filter-clear')) {
+        var filterInput = document.getElementById('filter-input');
         filterInput.value = '';
         htmx.ajax('POST', '/f/search', {target: '#search-list', values: {query: ''}});
-        filterClear.classList.add('hidden');
-    });
+        document.getElementById('filter-clear').classList.add('hidden');
+    }
 });
 
 window.addEventListener('popstate', function() {
