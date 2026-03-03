@@ -383,6 +383,7 @@ fn wiki_link_stem(url: &str) -> Option<&str> {
 /// Extract all wiki-link stems from a markdown body.
 /// Scans for `](url)` patterns; skips fenced code blocks.
 fn extract_wiki_link_stems(body: &str) -> Vec<String> {
+    let mut seen = std::collections::HashSet::new();
     let mut stems = Vec::new();
     let mut in_code_block = false;
 
@@ -400,7 +401,9 @@ fn extract_wiki_link_stems(body: &str) -> Vec<String> {
             rest = &rest[pos + 2..];
             let end = rest.find([')', '\n']).unwrap_or(rest.len());
             if let Some(stem) = wiki_link_stem(&rest[..end]) {
-                stems.push(stem.to_owned());
+                if seen.insert(stem.to_owned()) {
+                    stems.push(stem.to_owned());
+                }
             }
             rest = &rest[end..];
         }
