@@ -81,6 +81,16 @@ document.addEventListener('keydown', function(e) {
             return;
         }
     }
+    if (e.key === 'Tab' && document.activeElement === document.getElementById('filter-input')) {
+        e.preventDefault();
+        document.activeElement.blur();
+        var first = document.querySelector('#search-list .note-item');
+        if (first) {
+            first.click();
+            first.scrollIntoView({block: 'nearest'});
+        }
+        return;
+    }
     var t = document.activeElement.tagName;
     if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return;
     if (e.key === 'e') {
