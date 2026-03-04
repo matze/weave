@@ -113,6 +113,7 @@ fn toc_item(h: &Heading, min_level: u8) -> Markup {
         li class={ (indent) " py-0.5" } {
             a href={ "#" (h.anchor) }
                 class="text-sky-600 dark:text-sky-600 hover:underline truncate block"
+                onclick="var el=document.getElementById(this.getAttribute('href').slice(1));if(el){event.preventDefault();el.scrollIntoView({behavior:'smooth',block:'start'})}"
             { (h.text) }
         }
     }
