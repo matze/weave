@@ -123,7 +123,7 @@ pub(crate) async fn save(
             div class="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0" {
                 div class="flex items-center gap-3" {
                     button
-                        class="md:hidden p-1 -ml-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                        class="md:hidden px-1 -ml-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
                         onclick="goBack()"
                         aria-label="Back to notes" {
                         (assets::icons::back())
