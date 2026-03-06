@@ -107,13 +107,24 @@
     background-color: var(--color-white);
   }
 
-  #note-content .prose {
-    transition: margin 0.3s ease;
+  #note-content .prose,
+  #note-content > div:first-child > div {
+    transition: margin 0.3s ease, max-width 0.3s ease;
   }
 
-  body.focus-mode #note-content .prose {
+  body.focus-mode #note-content .prose,
+  body.focus-mode #note-content > div:first-child > div {
     margin: 0 auto;
     max-width: var(--focus-prose-width, 65ch);
+  }
+
+  #title-buttons {
+    transition: opacity 0.2s ease;
+  }
+
+  body.focus-mode #title-buttons {
+    opacity: 0;
+    pointer-events: none;
   }
 
   @media (prefers-color-scheme: dark) {

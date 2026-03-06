@@ -43,30 +43,63 @@ function goBack() {
 function toggleFocus() {
     if (window.innerWidth < 768) return;
     var prose = document.querySelector('#note-content .prose');
+    var titleBar = document.querySelector('#note-content > div:first-child > div');
     if (document.body.classList.contains('focus-mode')) {
-        if (prose) {
-            prose.style.maxWidth = prose.offsetWidth + 'px';
-            prose.style.marginLeft = getComputedStyle(prose).marginLeft;
-            prose.style.marginRight = getComputedStyle(prose).marginRight;
-        }
+        var els = [prose, titleBar].filter(Boolean);
+        els.forEach(function(el) {
+            el.style.maxWidth = el.offsetWidth + 'px';
+            el.style.marginLeft = getComputedStyle(el).marginLeft;
+            el.style.marginRight = getComputedStyle(el).marginRight;
+        });
         document.body.classList.remove('focus-mode');
-        if (prose) {
-            requestAnimationFrame(function() {
-                prose.style.marginLeft = '';
-                prose.style.marginRight = '';
+        requestAnimationFrame(function() {
+            els.forEach(function(el) {
+                el.style.marginLeft = '';
+                el.style.marginRight = '';
             });
-            document.getElementById('sidebar').addEventListener('transitionend', function handler(e) {
+        });
+        document.getElementById('sidebar').addEventListener('transitionend', function handler(e) {
+            if (e.propertyName === 'width') {
+                els.forEach(function(el) { el.style.maxWidth = ''; });
+                document.getElementById('sidebar').removeEventListener('transitionend', handler);
+            }
+        });
+    } else {
+        var proseWidth = prose ? prose.offsetWidth : 0;
+        if (prose) {
+            document.body.style.setProperty('--focus-prose-width', proseWidth + 'px');
+        }
+
+        // Calculate final centered margin for the title bar so it
+        // transitions in sync with the sidebar collapse (both use the
+        // same 0.3s ease timing), avoiding the non-linear motion that
+        // margin:auto causes when the container width is also changing.
+        if (titleBar) {
+            var sidebarWidth = sidebar.offsetWidth;
+            var targetWidth = proseWidth || titleBar.offsetWidth;
+            var finalMargin = Math.max(0, (titleBar.offsetWidth + sidebarWidth - targetWidth) / 2);
+
+            titleBar.style.maxWidth = targetWidth + 'px';
+            titleBar.style.marginLeft = '0px';
+            titleBar.style.marginRight = '0px';
+        }
+
+        document.body.classList.add('focus-mode');
+
+        if (titleBar) {
+            requestAnimationFrame(function() {
+                titleBar.style.marginLeft = finalMargin + 'px';
+                titleBar.style.marginRight = finalMargin + 'px';
+            });
+            sidebar.addEventListener('transitionend', function handler(e) {
                 if (e.propertyName === 'width') {
-                    prose.style.maxWidth = '';
-                    document.getElementById('sidebar').removeEventListener('transitionend', handler);
+                    titleBar.style.marginLeft = '';
+                    titleBar.style.marginRight = '';
+                    titleBar.style.maxWidth = '';
+                    sidebar.removeEventListener('transitionend', handler);
                 }
             });
         }
-    } else {
-        if (prose) {
-            document.body.style.setProperty('--focus-prose-width', prose.offsetWidth + 'px');
-        }
-        document.body.classList.add('focus-mode');
     }
 }
 
