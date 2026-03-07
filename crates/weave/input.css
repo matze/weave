@@ -118,11 +118,8 @@
     max-width: var(--focus-prose-width, 65ch);
   }
 
-  #title-buttons {
-    transition: opacity 0.2s ease;
-  }
-
-  body.focus-mode #title-buttons {
+  body.focus-mode #title-buttons,
+  body.focus-expanding #title-buttons {
     opacity: 0;
     pointer-events: none;
   }

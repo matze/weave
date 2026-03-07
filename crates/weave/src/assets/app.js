@@ -51,6 +51,7 @@ function toggleFocus() {
             el.style.marginLeft = getComputedStyle(el).marginLeft;
             el.style.marginRight = getComputedStyle(el).marginRight;
         });
+        document.body.classList.add('focus-expanding');
         document.body.classList.remove('focus-mode');
         requestAnimationFrame(function() {
             els.forEach(function(el) {
@@ -61,6 +62,7 @@ function toggleFocus() {
         document.getElementById('sidebar').addEventListener('transitionend', function handler(e) {
             if (e.propertyName === 'width') {
                 els.forEach(function(el) { el.style.maxWidth = ''; });
+                document.body.classList.remove('focus-expanding');
                 document.getElementById('sidebar').removeEventListener('transitionend', handler);
             }
         });

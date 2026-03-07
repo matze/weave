@@ -63,33 +63,33 @@ pub(crate) async fn note(
     };
 
     html! {
-        div class="relative p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0" {
-            div class="flex items-center gap-3" {
+        div class="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0" {
+            div class="flex items-center gap-3 min-w-0" {
                 button
-                    class="md:hidden px-1 -ml-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                    class="md:hidden px-1 -ml-1 flex-shrink-0 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
                     onclick="goBack()"
                     aria-label="Back to notes" {
                     (assets::icons::back())
                 }
-                h2 class="text-xl font-bold dark:text-white" { (title) }
-            }
-            div id="title-buttons" class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-4" {
-                @if authenticated {
-                    button
-                        class="cursor-pointer"
-                        hx-get={ "/f/" (stem) "/edit" }
-                        hx-target="#note-content"
-                        aria-label="Edit note" {
-                        (assets::icons::edit())
+                h2 class="text-xl font-bold dark:text-white truncate" { (title) }
+                div id="title-buttons" class="flex items-center gap-4 ml-auto flex-shrink-0" {
+                    @if authenticated {
+                        button
+                            class="cursor-pointer"
+                            hx-get={ "/f/" (stem) "/edit" }
+                            hx-target="#note-content"
+                            aria-label="Edit note" {
+                            (assets::icons::edit())
+                        }
                     }
-                }
-                @if authenticated {
-                    a href="/logout" aria-label="Sign out" {
-                        (assets::icons::sign_out())
-                    }
-                } @else {
-                    a href="/login" aria-label="Sign in" {
-                        (assets::icons::sign_in())
+                    @if authenticated {
+                        a href="/logout" aria-label="Sign out" {
+                            (assets::icons::sign_out())
+                        }
+                    } @else {
+                        a href="/login" aria-label="Sign in" {
+                            (assets::icons::sign_in())
+                        }
                     }
                 }
             }
