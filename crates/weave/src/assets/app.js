@@ -224,3 +224,18 @@ document.addEventListener('htmx:responseError', function(e) {
         showNoteError('note could not be loaded');
     }
 });
+
+(function() {
+    var source = new EventSource('/events');
+    source.addEventListener('notes-updated', function(e) {
+        htmx.trigger(document.body, 'notes-updated');
+        try {
+            var data = JSON.parse(e.data);
+            var current = stemFromUrl();
+            if (current && current === data.stem) {
+                if (data.removed) showNoteError('note was removed');
+                else htmx.ajax('GET', '/f/' + encodeURIComponent(data.stem), {target: '#note-content'});
+            }
+        } catch (err) {}
+    });
+})();

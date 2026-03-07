@@ -6,6 +6,7 @@ mod pages;
 mod partials;
 mod zk;
 
+use std::convert::Infallible;
 use std::net::{Ipv4Addr, SocketAddr};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, mpsc};
@@ -14,6 +15,7 @@ use anyhow::Result;
 use axum::Router;
 use axum::extract::{Form, FromRef, State};
 use axum::response::Redirect;
+use axum::response::sse::{Event, KeepAlive, Sse};
 use axum::routing::{get, post};
 use axum_extra::extract::SignedCookieJar;
 use axum_extra::extract::cookie::{Cookie, Key};
@@ -21,12 +23,21 @@ use futures_concurrency::future::Join;
 use notify::event::{AccessKind, AccessMode, ModifyKind, RenameMode};
 use notify::{EventKind, Watcher};
 use serde::Deserialize;
+use tokio_stream::StreamExt;
+use tokio_stream::wrappers::BroadcastStream;
 use tower::ServiceBuilder;
 use tower_http::compression::CompressionLayer;
 use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 
 type Notebook = Arc<Mutex<zk::Notebook>>;
+type EventSender = tokio::sync::broadcast::Sender<NoteEvent>;
+
+#[derive(Clone, Debug)]
+struct NoteEvent {
+    stem: String,
+    removed: bool,
+}
 
 pub(crate) type Issuer = Arc<jwt::Issuer>;
 
@@ -40,6 +51,8 @@ struct AppState {
     key: Key,
     /// Login password
     password: String,
+    /// Broadcast channel for file change events.
+    events_tx: EventSender,
 }
 
 impl FromRef<AppState> for Notebook {
@@ -57,6 +70,12 @@ impl FromRef<AppState> for Issuer {
 impl FromRef<AppState> for Key {
     fn from_ref(state: &AppState) -> Self {
         state.key.clone()
+    }
+}
+
+impl FromRef<AppState> for EventSender {
+    fn from_ref(state: &AppState) -> Self {
+        state.events_tx.clone()
     }
 }
 
@@ -91,7 +110,7 @@ enum WatchEvent {
     Removed(std::path::PathBuf),
 }
 
-async fn watch(notebook: Notebook) -> Result<()> {
+async fn watch(notebook: Notebook, events_tx: EventSender) -> Result<()> {
     let path = notebook.lock().unwrap().path.clone();
 
     tokio::task::spawn_blocking(move || {
@@ -146,22 +165,44 @@ async fn watch(notebook: Notebook) -> Result<()> {
         watcher.watch(&path, notify::RecursiveMode::Recursive)?;
 
         while let Ok(event) = rx.recv() {
-            match event {
-                WatchEvent::Modified(path) => {
-                    if let Some(stem) = path.file_stem().and_then(|n| n.to_str()) {
-                        // TODO: we are locking the entire notebook while loading the new note.
-                        // Perhaps decouple that.
-                        if let Err(err) = notebook.lock().unwrap().reload(stem) {
-                            tracing::error!(?err, "failed to reload {stem}");
+            // Debounce: collect events for 200ms after the first one.
+            let mut events = vec![event];
+            std::thread::sleep(std::time::Duration::from_millis(200));
+            while let Ok(e) = rx.try_recv() {
+                events.push(e);
+            }
+
+            // Deduplicate by stem, keeping the last event for each stem.
+            let mut seen = std::collections::HashMap::<String, bool>::new();
+            for event in &events {
+                match event {
+                    WatchEvent::Modified(path) => {
+                        if let Some(stem) = path.file_stem().and_then(|n| n.to_str()) {
+                            seen.insert(stem.to_owned(), false);
+                        }
+                    }
+                    WatchEvent::Removed(path) => {
+                        if let Some(stem) = path.file_stem().and_then(|n| n.to_str()) {
+                            seen.insert(stem.to_owned(), true);
                         }
                     }
                 }
-                WatchEvent::Removed(path) => {
-                    if let Some(stem) = path.file_stem().and_then(|n| n.to_str()) {
-                        tracing::info!(stem, "removing note");
-                        notebook.lock().unwrap().remove(stem);
+            }
+
+            for (stem, removed) in &seen {
+                if *removed {
+                    tracing::info!(stem, "removing note");
+                    notebook.lock().unwrap().remove(stem);
+                } else {
+                    if let Err(err) = notebook.lock().unwrap().reload(stem) {
+                        tracing::error!(?err, "failed to reload {stem}");
+                        continue;
                     }
                 }
+                let _ = events_tx.send(NoteEvent {
+                    stem: stem.clone(),
+                    removed: *removed,
+                });
             }
         }
 
@@ -170,6 +211,22 @@ async fn watch(notebook: Notebook) -> Result<()> {
     .await??;
 
     Ok(())
+}
+
+async fn events(
+    State(tx): State<EventSender>,
+) -> Sse<impl tokio_stream::Stream<Item = Result<Event, Infallible>>> {
+    let stream = BroadcastStream::new(tx.subscribe()).filter_map(|r| {
+        r.ok().map(|e| {
+            let data = format!(
+                r#"{{"stem":"{}","removed":{}}}"#,
+                e.stem.replace('\\', "\\\\").replace('"', "\\\""),
+                e.removed
+            );
+            Ok(Event::default().event("notes-updated").data(data))
+        })
+    });
+    Sse::new(stream).keep_alive(KeepAlive::default())
 }
 
 #[tokio::main]
@@ -202,12 +259,14 @@ async fn main() -> Result<()> {
     let issuer = jwt::Issuer::new()?;
     let key = Key::generate();
     let notebook = Arc::new(Mutex::new(notebook));
+    let (events_tx, _) = tokio::sync::broadcast::channel::<NoteEvent>(64);
 
     let state = AppState {
         notebook: notebook.clone(),
         issuer: Arc::new(issuer),
         key,
         password,
+        events_tx: events_tx.clone(),
     };
 
     let mut app = Router::new()
@@ -222,6 +281,7 @@ async fn main() -> Result<()> {
         )
         .route("/f/{stem}/edit", get(partials::edit::edit))
         .route("/f/{stem}/preview", post(partials::edit::preview))
+        .route("/events", get(events))
         .route("/app.css", get(assets::app_css))
         .route("/app.js", get(assets::app_js))
         .route("/favicon.svg", get(assets::favicon))
@@ -243,7 +303,7 @@ async fn main() -> Result<()> {
     let addr = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), port);
     let listener = tokio::net::TcpListener::bind(addr).await?;
     tracing::info!("serving on {addr:?}");
-    let _ = (watch(notebook), axum::serve(listener, app)).join().await;
+    let _ = (watch(notebook, events_tx), axum::serve(listener, app)).join().await;
 
     Ok(())
 }
