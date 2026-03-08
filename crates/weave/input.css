@@ -47,6 +47,18 @@
   }
 }
 
+/* Sidebar title fades out and collapses when filter input is focused */
+#sidebar-title {
+  transition: opacity 0.2s ease, max-width 0.2s ease, margin 0.2s ease;
+  max-width: 5rem;
+}
+
+#sidebar-header:focus-within #sidebar-title {
+  opacity: 0;
+  max-width: 0;
+  margin-right: 0;
+}
+
 /* Note hover needs its own value since container and hover now share the same gray-800 mapping */
 @media (prefers-color-scheme: dark) {
   .note-item:hover {
