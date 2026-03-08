@@ -249,7 +249,7 @@ async fn main() -> Result<()> {
 
     let attachments = std::env::var("WEAVE_ATTACHMENTS")
         .ok()
-        .map(|s| PathBuf::from(s))
+        .map(PathBuf::from)
         .map(|subdir| {
             let fs_path = notebook.attachments(&subdir)?;
             Ok::<_, zk::Error>((subdir, fs_path))

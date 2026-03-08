@@ -400,10 +400,10 @@ fn extract_wiki_link_stems(body: &str) -> Vec<String> {
         while let Some(pos) = rest.find("](") {
             rest = &rest[pos + 2..];
             let end = rest.find([')', '\n']).unwrap_or(rest.len());
-            if let Some(stem) = wiki_link_stem(&rest[..end]) {
-                if seen.insert(stem.to_owned()) {
-                    stems.push(stem.to_owned());
-                }
+            if let Some(stem) = wiki_link_stem(&rest[..end])
+                && seen.insert(stem.to_owned())
+            {
+                stems.push(stem.to_owned());
             }
             rest = &rest[end..];
         }
