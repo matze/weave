@@ -27,7 +27,7 @@ pub(crate) async fn note(
                     }
                     span class="invisible font-black text-xl flex-grow" { "\u{00a0}" }
                     div class="flex items-center gap-4 ml-auto" {
-                        a href="/login" aria-label="Sign in" {
+                        a href="/login" aria-label="Sign in" class="text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]" {
                             (assets::icons::sign_in())
                         }
                     }
@@ -75,7 +75,7 @@ pub(crate) async fn note(
                 div id="title-buttons" class="flex items-center gap-4 ml-auto flex-shrink-0" {
                     @if authenticated {
                         button
-                            class="cursor-pointer"
+                            class="cursor-pointer text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]"
                             hx-get={ "/f/" (stem) "/edit" }
                             hx-target="#note-content"
                             aria-label="Edit note" {
@@ -83,11 +83,11 @@ pub(crate) async fn note(
                         }
                     }
                     @if authenticated {
-                        a href="/logout" aria-label="Sign out" {
+                        a href="/logout" aria-label="Sign out" class="text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]" {
                             (assets::icons::sign_out())
                         }
                     } @else {
-                        a href="/login" aria-label="Sign in" {
+                        a href="/login" aria-label="Sign in" class="text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]" {
                             (assets::icons::sign_in())
                         }
                     }

@@ -30,18 +30,18 @@ pub(crate) fn layout(
                             div class="flex-grow" {}
                             div class="md:hidden flex-shrink-0 ml-3" {
                                 @if authenticated {
-                                    a href="/logout" aria-label="Sign out" {
+                                    a href="/logout" aria-label="Sign out" class="text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]" {
                                         (assets::icons::sign_out())
                                     }
                                 } @else {
-                                    a href="/login" aria-label="Sign in" {
+                                    a href="/login" aria-label="Sign in" class="text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]" {
                                         (assets::icons::sign_in())
                                     }
                                 }
                             }
                             button #search-toggle type="button"
                                 title="Press S to search"
-                                class="ml-3 cursor-pointer text-gray-500 hover:text-gray-800 dark:hover:text-gray-200" {
+                                class="ml-3 mr-2 cursor-pointer text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]" {
                                     (assets::icons::search())
                             }
                         }
@@ -50,14 +50,14 @@ pub(crate) fn layout(
                                 input #filter-input type="search"
                                     name="query"
                                     placeholder="Filter notes…"
-                                    class="w-full py-1.5 px-2 pr-8 text-sm rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    class="w-full py-1.5 px-2 pr-8 text-sm rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                     hx-post="/f/search"
                                     hx-trigger="input changed delay:300ms, keyup[key=='Enter'], notes-updated from:body"
                                     hx-target="#search-list"
                                     hx-swap="innerHTML"
                                     {}
                                 button #filter-clear type="button"
-                                    class="absolute cursor-pointer right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hidden" {
+                                    class="absolute cursor-pointer right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)] hidden" {
                                         (assets::icons::cancel())
                                 }
                             }
@@ -76,11 +76,11 @@ pub(crate) fn layout(
                                 span class="invisible font-black" { "\u{00a0}" }
                                 div class="ml-auto" {
                                     @if authenticated {
-                                        a href="/logout" aria-label="Sign out" {
+                                        a href="/logout" aria-label="Sign out" class="text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]" {
                                             (assets::icons::sign_out())
                                         }
                                     } @else {
-                                        a href="/login" aria-label="Sign in" {
+                                        a href="/login" aria-label="Sign in" class="text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]" {
                                             (assets::icons::sign_in())
                                         }
                                     }
