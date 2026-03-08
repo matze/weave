@@ -24,25 +24,10 @@ pub(crate) fn layout(
             body class="font-sans bg-gray-100 dark:bg-gray-900 text-black dark:text-white" data-note?[show_note] {
               div class="max-w-7xl mx-auto flex flex-col md:flex-row h-screen bg-white dark:bg-gray-800" {
                 div id="sidebar" class="w-full md:w-80 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-y-auto flex-shrink-0 h-screen md:h-auto" {
-                    div #sidebar-header class="p-4 border-b border-gray-200 dark:border-gray-700" {
-                        div class="flex items-center" {
-                            span #sidebar-title class="text-xl font-black italic text-transparent bg-clip-text bg-linear-to-r/oklab from-[#5bc0e0] to-[#c060d0] whitespace-nowrap overflow-hidden flex-shrink-0 mr-3" {"weave"}
-                            div class="relative flex-grow min-w-0" {
-                                input #filter-input type="search"
-                                    name="query"
-                                    placeholder="Type 'S' to filter"
-                                    class="w-full py-[0.1875rem] px-2 pr-8 text-sm rounded bg-gray-100 md:bg-transparent dark:bg-gray-700 md:dark:bg-transparent text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700 focus:ring-2 focus:ring-blue-500"
-                                    hx-post="/f/search"
-                                    hx-trigger="input changed delay:300ms, keyup[key=='Enter'], notes-updated from:body"
-                                    hx-target="#search-list"
-                                    hx-swap="innerHTML"
-                                    {}
-
-                                button #filter-clear type="button"
-                                    class="absolute cursor-pointer right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hidden" {
-                                        (assets::icons::cancel())
-                                    }
-                            }
+                    div #sidebar-header class="relative border-b border-gray-200 dark:border-gray-700" {
+                        div #browse-row class="p-4 flex items-center" {
+                            span #sidebar-title class="text-xl font-black italic text-transparent bg-clip-text bg-linear-to-r/oklab from-[#5bc0e0] to-[#c060d0] whitespace-nowrap flex-shrink-0" {"weave"}
+                            div class="flex-grow" {}
                             div class="md:hidden flex-shrink-0 ml-3" {
                                 @if authenticated {
                                     a href="/logout" aria-label="Sign out" {
@@ -52,6 +37,28 @@ pub(crate) fn layout(
                                     a href="/login" aria-label="Sign in" {
                                         (assets::icons::sign_in())
                                     }
+                                }
+                            }
+                            button #search-toggle type="button"
+                                title="Press S to search"
+                                class="ml-3 cursor-pointer text-gray-500 hover:text-gray-800 dark:hover:text-gray-200" {
+                                    (assets::icons::search())
+                            }
+                        }
+                        div #search-row class="absolute inset-0 p-4 flex items-center" {
+                            div class="relative flex-grow min-w-0" {
+                                input #filter-input type="search"
+                                    name="query"
+                                    placeholder="Filter notes…"
+                                    class="w-full py-1.5 px-2 pr-8 text-sm rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    hx-post="/f/search"
+                                    hx-trigger="input changed delay:300ms, keyup[key=='Enter'], notes-updated from:body"
+                                    hx-target="#search-list"
+                                    hx-swap="innerHTML"
+                                    {}
+                                button #filter-clear type="button"
+                                    class="absolute cursor-pointer right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hidden" {
+                                        (assets::icons::cancel())
                                 }
                             }
                         }

@@ -46,16 +46,25 @@
   }
 }
 
-/* Sidebar title fades out and collapses when filter input is focused */
-#sidebar-title {
-  transition: opacity 0.2s ease, max-width 0.2s ease, margin 0.2s ease;
-  max-width: 5rem;
+/* Sidebar header: browse row fades, search row wipes in from right to left */
+#browse-row {
+  transition: opacity 0.12s ease;
 }
 
-#sidebar-header:focus-within #sidebar-title {
+#search-row {
+  pointer-events: none;
+  clip-path: inset(0 0 0 100%);
+  transition: clip-path 0.12s ease;
+}
+
+#sidebar-header.search-active #browse-row {
   opacity: 0;
-  max-width: 0;
-  margin-right: 0;
+  pointer-events: none;
+}
+
+#sidebar-header.search-active #search-row {
+  pointer-events: auto;
+  clip-path: inset(0 0 0 0%);
 }
 
 /* Note hover needs its own value since container and hover now share the same gray-800 mapping */
