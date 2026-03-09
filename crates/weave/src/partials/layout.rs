@@ -25,7 +25,7 @@ pub(crate) fn layout(
               div class="max-w-7xl mx-auto flex flex-col md:flex-row h-screen bg-white dark:bg-gray-800" {
                 div id="sidebar" class="w-full md:w-80 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-y-auto flex-shrink-0 h-screen md:h-auto" {
                     div #sidebar-header class="relative border-b border-gray-200 dark:border-gray-700" {
-                        div #browse-row class="p-4 flex items-center" {
+                        div #browse-row class="py-4 pr-4 pl-5 flex items-center" {
                             span #sidebar-title class="text-xl font-black italic text-transparent bg-clip-text bg-linear-to-r/oklab from-[#5bc0e0] to-[#c060d0] whitespace-nowrap flex-shrink-0" {"weave"}
                             div class="flex-grow" {}
                             div class="md:hidden flex-shrink-0 ml-3" {
@@ -45,7 +45,7 @@ pub(crate) fn layout(
                                     (assets::icons::search())
                             }
                         }
-                        div #search-row class="absolute inset-0 p-4 flex items-center" {
+                        div #search-row class="absolute inset-0 py-4 pr-4 pl-5 flex items-center" {
                             div class="relative flex-grow min-w-0" {
                                 input #filter-input type="search"
                                     name="query"
