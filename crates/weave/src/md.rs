@@ -367,7 +367,8 @@ fn render_node(node: &MdNode) -> Markup {
                     ),
                 };
                 let container_class = format!("border-s-4 {border} {bg} p-4 rounded my-4");
-                let title_class = format!("{text_color} font-semibold mb-2 flex items-center gap-2");
+                let title_class =
+                    format!("{text_color} font-semibold mb-2 flex items-center gap-2");
                 html! {
                     div class=(container_class) {
                         div class=(title_class) {
@@ -379,7 +380,7 @@ fn render_node(node: &MdNode) -> Markup {
                         }
                     }
                 }
-            },
+            }
             MdTag::CodeBlock(lang) => {
                 let code = collect_text(children);
                 let pre_class = "bg-gray-100 dark:bg-gray-900 p-4 rounded my-6 overflow-x-auto font-mono text-sm leading-relaxed";
@@ -479,7 +480,10 @@ fn render_node(node: &MdNode) -> Markup {
                 } else {
                     Some(title.as_str())
                 };
-                let url = if !url.starts_with('/') && !url.starts_with("http://") && !url.starts_with("https://") {
+                let url = if !url.starts_with('/')
+                    && !url.starts_with("http://")
+                    && !url.starts_with("https://")
+                {
                     format!("/{url}")
                 } else {
                     url.clone()
@@ -525,7 +529,10 @@ fn highlight_code(source: &str, lang: Option<&str>) -> Option<String> {
 pub fn markdown_to_html(source: &str) -> Markup {
     let parser = Parser::new_ext(
         source,
-        Options::ENABLE_TABLES | Options::ENABLE_STRIKETHROUGH | Options::ENABLE_SMART_PUNCTUATION | Options::ENABLE_GFM,
+        Options::ENABLE_TABLES
+            | Options::ENABLE_STRIKETHROUGH
+            | Options::ENABLE_SMART_PUNCTUATION
+            | Options::ENABLE_GFM,
     );
 
     let tree = build_tree(parser);
@@ -559,7 +566,10 @@ pub fn heading_anchor(text: &str) -> String {
 pub fn markdown_to_html_with_headings(source: &str) -> (Markup, Vec<Heading>) {
     let parser = Parser::new_ext(
         source,
-        Options::ENABLE_TABLES | Options::ENABLE_STRIKETHROUGH | Options::ENABLE_SMART_PUNCTUATION | Options::ENABLE_GFM,
+        Options::ENABLE_TABLES
+            | Options::ENABLE_STRIKETHROUGH
+            | Options::ENABLE_SMART_PUNCTUATION
+            | Options::ENABLE_GFM,
     );
     let tree = build_tree(parser);
     let headings = collect_headings_from_tree(&tree);
