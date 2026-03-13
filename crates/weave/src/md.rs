@@ -490,7 +490,7 @@ fn render_node(node: &MdNode) -> Markup {
         MdNode::Text(t) => text_to_html(t),
         MdNode::Plain(t) => html! { (t) },
         MdNode::InlineCode(c) => html! {
-            code class="bg-gray-100 dark:bg-gray-900 px-1.5 py-0.5 rounded text-[0.875em] font-mono" {
+            code class="bg-gray-100 dark:bg-gray-900 px-1 py-1.5 rounded text-[0.875em] font-mono" {
                 (c)
             }
         },
