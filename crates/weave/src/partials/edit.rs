@@ -137,7 +137,7 @@ pub(crate) async fn save(
                             aria-label="Edit note" {
                             (assets::icons::edit())
                         }
-                        a href="/logout" aria-label="Sign out" {
+                        a href="/logout" aria-label="Sign out" class="hidden md:block" {
                             (assets::icons::sign_out())
                         }
                     }

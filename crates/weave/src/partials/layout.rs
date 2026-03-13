@@ -29,11 +29,7 @@ pub(crate) fn layout(
                             span #sidebar-title class="text-xl font-black italic text-transparent bg-clip-text bg-linear-to-r/oklab from-[#5bc0e0] to-[#c060d0] whitespace-nowrap flex-shrink-0" {"weave"}
                             div class="flex-grow" {}
                             div class="md:hidden flex-shrink-0 ml-3" {
-                                @if authenticated {
-                                    a href="/logout" aria-label="Sign out" class="text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]" {
-                                        (assets::icons::sign_out())
-                                    }
-                                } @else {
+                                @if !authenticated {
                                     a href="/login" aria-label="Sign in" class="text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]" {
                                         (assets::icons::sign_in())
                                     }
@@ -76,7 +72,7 @@ pub(crate) fn layout(
                                 span class="invisible font-black" { "\u{00a0}" }
                                 div class="ml-auto" {
                                     @if authenticated {
-                                        a href="/logout" aria-label="Sign out" class="text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]" {
+                                        a href="/logout" aria-label="Sign out" class="hidden md:block text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]" {
                                             (assets::icons::sign_out())
                                         }
                                     } @else {
