@@ -150,7 +150,7 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'e') {
         var btn = document.querySelector('[aria-label="Edit note"]');
         if (btn) btn.click();
-    } else if (e.key === 'f') {
+    } else if (e.key === 'f' && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         toggleFocus();
     } else if (e.key === 's') {
