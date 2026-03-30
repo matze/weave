@@ -72,7 +72,7 @@ pub(crate) async fn note(
                     (assets::icons::back())
                 }
                 h2 class="text-xl font-bold dark:text-white truncate" { (title) }
-                div id="title-buttons" class="flex items-center gap-4 ml-auto flex-shrink-0" {
+                div id="title-buttons" class="flex items-center gap-6 ml-auto flex-shrink-0" {
                     @if authenticated {
                         button
                             class="cursor-pointer text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]"
