@@ -63,7 +63,7 @@ pub(crate) async fn note(
     };
 
     html! {
-        div class="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0" {
+        div id="title-bar" class="relative p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0" {
             div class="flex items-center gap-3 min-w-0" {
                 button
                     class="md:hidden px-1 -ml-3 flex-shrink-0 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -81,6 +81,11 @@ pub(crate) async fn note(
                             aria-label="Edit note" {
                             (assets::icons::edit())
                         }
+                        button #clip-toggle type="button"
+                            title="Press C to clip a URL"
+                            class="cursor-pointer text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]" {
+                            (assets::icons::clip())
+                        }
                     }
                     @if authenticated {
                         a href="/logout" aria-label="Sign out" class="hidden md:block text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]" {
@@ -89,6 +94,24 @@ pub(crate) async fn note(
                     } @else {
                         a href="/login" aria-label="Sign in" class="text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]" {
                             (assets::icons::sign_in())
+                        }
+                    }
+                }
+            }
+            @if authenticated {
+                div #clip-row class="absolute inset-0 p-4 flex items-center" {
+                    div class="relative flex-grow min-w-0" {
+                        input #clip-input type="url"
+                            name="url"
+                            placeholder="Paste URL to clip…"
+                            class="w-full py-1.5 px-2 pr-8 text-sm rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            hx-post="/clip"
+                            hx-trigger="keyup[key=='Enter']"
+                            hx-swap="none"
+                            {}
+                        button #clip-cancel type="button"
+                            class="absolute cursor-pointer right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]" {
+                            (assets::icons::cancel())
                         }
                     }
                 }

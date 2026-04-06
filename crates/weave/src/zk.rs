@@ -97,6 +97,28 @@ impl Notebook {
             .cloned()
             .collect()
     }
+
+    /// Create a new note with a random 4-character zk-style ID and write it to disk.
+    /// Returns the generated filename stem.
+    pub fn create_note(&self, content: &str) -> std::io::Result<String> {
+        use rand::RngExt;
+
+        const CHARS: &[u8] = b"0123456789abcdefghijklmnopqrstuvwxyz";
+        let mut rng = rand::rng();
+
+        let stem = loop {
+            let id: String = (0..4)
+                .map(|_| CHARS[rng.random_range(0..CHARS.len())] as char)
+                .collect();
+            let path = self.path.join(format!("{id}.md"));
+            if !path.exists() {
+                break id;
+            }
+        };
+
+        std::fs::write(self.path.join(format!("{stem}.md")), content)?;
+        Ok(stem)
+    }
 }
 
 /// Extension trait for weave-specific [`Note`] methods.
