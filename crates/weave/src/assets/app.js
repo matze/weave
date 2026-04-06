@@ -111,6 +111,25 @@ function activateSearch() {
     document.getElementById('filter-input').focus();
 }
 
+function activateClip() {
+    var tb = document.getElementById('title-bar');
+    if (tb) {
+        tb.classList.add('clip-active');
+        var ci = document.getElementById('clip-input');
+        if (ci) ci.focus();
+    }
+}
+
+function deactivateClip() {
+    var tb = document.getElementById('title-bar');
+    if (tb) tb.classList.remove('clip-active');
+    var ci = document.getElementById('clip-input');
+    if (ci) {
+        ci.value = '';
+        ci.blur();
+    }
+}
+
 function deactivateSearch() {
     document.getElementById('sidebar-header').classList.remove('search-active');
     var fi = document.getElementById('filter-input');
@@ -128,6 +147,10 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         if (document.body.classList.contains('focus-mode')) {
             toggleFocus();
+            return;
+        }
+        if (document.activeElement === document.getElementById('clip-input')) {
+            deactivateClip();
             return;
         }
         if (document.activeElement === document.getElementById('filter-input')) {
@@ -153,6 +176,12 @@ document.addEventListener('keydown', function(e) {
     } else if (e.key === 'f') {
         e.preventDefault();
         toggleFocus();
+    } else if (e.key === 'c') {
+        var clipToggle = document.getElementById('clip-toggle');
+        if (clipToggle) {
+            e.preventDefault();
+            activateClip();
+        }
     } else if (e.key === 's') {
         e.preventDefault();
         activateSearch();
@@ -184,7 +213,11 @@ document.addEventListener('input', function(e) {
 });
 
 document.addEventListener('click', function(e) {
-    if (e.target.closest('#search-toggle')) {
+    if (e.target.closest('#clip-toggle')) {
+        activateClip();
+    } else if (e.target.closest('#clip-cancel')) {
+        deactivateClip();
+    } else if (e.target.closest('#search-toggle')) {
         activateSearch();
     } else if (e.target.closest('#filter-clear')) {
         deactivateSearch();
@@ -209,6 +242,12 @@ document.addEventListener('htmx:historyRestore', function() {
         if (filterInput.value) {
             document.getElementById('sidebar-header').classList.add('search-active');
         }
+    }
+});
+
+document.addEventListener('htmx:afterRequest', function(e) {
+    if (e.detail.elt && e.detail.elt.id === 'clip-input') {
+        deactivateClip();
     }
 });
 

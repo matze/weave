@@ -67,6 +67,27 @@
   clip-path: inset(0 0 0 0%);
 }
 
+/* Clip input overlay in the note title bar */
+#title-bar > :first-child {
+  transition: opacity 0.12s ease;
+}
+
+#clip-row {
+  pointer-events: none;
+  clip-path: inset(0 0 0 100%);
+  transition: clip-path 0.12s ease;
+}
+
+#title-bar.clip-active > :first-child {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#title-bar.clip-active #clip-row {
+  pointer-events: auto;
+  clip-path: inset(0 0 0 0%);
+}
+
 /* Note hover needs its own value since container and hover now share the same gray-800 mapping */
 @media (prefers-color-scheme: dark) {
   .note-item:hover {

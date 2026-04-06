@@ -274,6 +274,7 @@ async fn main() -> Result<()> {
         .route("/note/{stem}", get(pages::note::note))
         .route("/login", get(pages::login::login).post(do_login))
         .route("/logout", get(logout))
+        .route("/clip", post(partials::clip::clip))
         .route("/f/search", post(partials::search::search))
         .route(
             "/f/{stem}",
@@ -303,7 +304,9 @@ async fn main() -> Result<()> {
     let addr = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), port);
     let listener = tokio::net::TcpListener::bind(addr).await?;
     tracing::info!("serving on {addr:?}");
-    let _ = (watch(notebook, events_tx), axum::serve(listener, app)).join().await;
+    let _ = (watch(notebook, events_tx), axum::serve(listener, app))
+        .join()
+        .await;
 
     Ok(())
 }

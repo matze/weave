@@ -48,6 +48,14 @@ pub(crate) fn search() -> Markup {
     }
 }
 
+pub(crate) fn clip() -> Markup {
+    html! {
+        svg class="w-4 h-4 overflow-visible" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {
+            path fill="currentColor" d="m6,19h12v1H6v-1Zm12-3H6v1h12v-1ZM12,3.5c0-1.378,1.122-2.5,2.5-2.5s2.5,1.122,2.5,2.5v8.5c0,.551-.449,1-1,1s-1-.449-1-1V4h-1v8c0,1.103.897,2,2,2s2-.897,2-2V3.5c0-1.93-1.57-3.5-3.5-3.5s-3.5,1.57-3.5,3.5v7.5h1V3.5Zm-6,9.5v1h6.555c-.181-.31-.321-.644-.413-1h-6.141ZM19.5,0h-.757c.253.306.469.643.652,1h.105c.827,0,1.5.673,1.5,1.5v20.5H3V2.5c0-.827.673-1.5,1.5-1.5h5.105c.183-.357.399-.694.652-1h-5.757c-1.378,0-2.5,1.122-2.5,2.5v21.5h20V2.5c0-1.378-1.122-2.5-2.5-2.5Z" {}
+        }
+    }
+}
+
 pub(crate) fn pin() -> Markup {
     html! {
         svg class="w-4 h-4 overflow-visible" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" {
