@@ -36,12 +36,6 @@ function syncView(scroll) {
     var mode = hasNote ? article.getAttribute('data-mode') : null;
 
     var segctl = document.getElementById('mode-segctl');
-    var focusToggle = document.getElementById('focus-toggle');
-    if (segctl) segctl.style.display = hasNote ? '' : 'none';
-    if (focusToggle) focusToggle.style.display = hasNote ? '' : 'none';
-    var divider = document.querySelector('.actions .tb-divider');
-    if (divider) divider.style.display = hasNote ? '' : 'none';
-
     if (segctl) {
         segctl.querySelectorAll('button').forEach(function(b) {
             b.classList.toggle('is-on', b.getAttribute('data-mode') === mode);
@@ -81,8 +75,6 @@ function enterFocus() {
     var shell = focusShell();
     if (!shell) return;
     shell.classList.add('is-focus');
-    var btn = document.getElementById('focus-toggle');
-    if (btn) { btn.classList.add('is-on'); btn.setAttribute('aria-pressed', 'true'); }
     try { localStorage.setItem('focus', '1'); } catch (e) {}
 }
 
@@ -90,8 +82,6 @@ function exitFocus() {
     var shell = focusShell();
     if (!shell) return;
     shell.classList.remove('is-focus');
-    var btn = document.getElementById('focus-toggle');
-    if (btn) { btn.classList.remove('is-on'); btn.setAttribute('aria-pressed', 'false'); }
     try { localStorage.removeItem('focus'); } catch (e) {}
 }
 
@@ -253,8 +243,8 @@ document.addEventListener('keydown', function(e) {
 document.addEventListener('click', function(e) {
     if (e.target.closest('#clip-toggle')) { openClip(); }
     else if (e.target.closest('#clip-cancel')) { closeClip(); }
-    else if (e.target.closest('#focus-toggle')) { toggleFocus(); }
     else if (e.target.closest('#theme-toggle')) { toggleTheme(); }
+    else if (e.target.closest('#edit-btn')) { switchMode('edit'); }
     else {
         var seg = e.target.closest('.segctl > button');
         if (seg) { switchMode(seg.getAttribute('data-mode')); }

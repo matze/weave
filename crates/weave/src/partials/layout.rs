@@ -44,23 +44,21 @@ pub(crate) fn layout(
                     }
 
                     div class="actions" {
-                        @if show_note {
-                            div class="segctl" #mode-segctl {
-                                button type="button" #mode-read class="is-on" data-mode="read"
-                                    title="Read (V)" aria-label="Read" {
-                                    (assets::icons::eye()) span { "Read" }
-                                }
-                                button type="button" #mode-edit data-mode="edit"
-                                    title="Edit (E)" aria-label="Edit" {
-                                    (assets::icons::pencil()) span { "Edit" }
-                                }
+                        div class="segctl" #mode-segctl {
+                            button type="button" #mode-read class="is-on" data-mode="read"
+                                title="Read (V)" aria-label="Read" {
+                                (assets::icons::eye()) span { "Read" }
                             }
-                            button type="button" class="tb-btn" #focus-toggle
-                                title="Focus mode (F)" aria-label="Focus mode" aria-pressed="false" {
-                                (assets::icons::focus_brackets())
+                            button type="button" #mode-edit data-mode="edit"
+                                title="Edit (E)" aria-label="Edit" {
+                                (assets::icons::pencil()) span { "Edit" }
                             }
-                            span class="tb-divider" {}
                         }
+                        button type="button" class="tb-btn" id="edit-btn"
+                            title="Edit (E)" aria-label="Edit" {
+                            (assets::icons::pencil())
+                        }
+                        span class="tb-divider" {}
                         @if authenticated {
                             button type="button" class="tb-btn" #clip-toggle
                                 title="Clip URL (C)" aria-label="Clip URL" {
