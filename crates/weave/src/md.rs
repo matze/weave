@@ -96,7 +96,7 @@ enum MdTag {
     CodeBlock(Option<String>),
     OrderedList,
     UnorderedList,
-    ListItem { ordered: bool },
+    ListItem,
     Emphasis,
     Strong,
     Strikethrough,
@@ -148,13 +148,7 @@ fn build_tree(parser: Parser) -> MdNode {
                     }
                     CmarkTag::List(Some(_)) => MdTag::OrderedList,
                     CmarkTag::List(None) => MdTag::UnorderedList,
-                    CmarkTag::Item => {
-                        let ordered = stack
-                            .iter()
-                            .rev()
-                            .any(|(t, _)| matches!(t, MdTag::OrderedList));
-                        MdTag::ListItem { ordered }
-                    }
+                    CmarkTag::Item => MdTag::ListItem,
                     CmarkTag::Emphasis => MdTag::Emphasis,
                     CmarkTag::Strong => MdTag::Strong,
                     CmarkTag::Strikethrough => MdTag::Strikethrough,
@@ -243,11 +237,11 @@ fn text_to_html(text: &str) -> Markup {
                 Segment::Text(t) => { (t) },
                 Segment::Tag(tag) => {
                     a href="#"
-                        class="text-sky-600 hover:underline"
+                        class="md-tag"
                         hx-post="/f/search"
                         hx-vals={ "{\"query\": \"" (tag) "\"}" }
                         hx-target="#search-list"
-                        hx-on-htmx-after-request="document.querySelector('input[name=query]').value = this.getAttribute('data-tag');document.getElementById('filter-clear').classList.remove('hidden')"
+                        hx-on-htmx-after-request="document.querySelector('input[name=query]').value = this.getAttribute('data-tag')"
                         onclick="showList()"
                         data-tag=(tag)
                     {
@@ -258,11 +252,11 @@ fn text_to_html(text: &str) -> Markup {
                     ":"
                     @for tag_name in raw.split(':').filter(|s| !s.is_empty()) {
                         a href="#"
-                            class="text-sky-600 hover:underline"
+                            class="md-tag"
                             hx-post="/f/search"
                             hx-vals={ "{\"query\": \"#" (tag_name) "\"}" }
                             hx-target="#search-list"
-                            hx-on-htmx-after-request="document.querySelector('input[name=query]').value = this.getAttribute('data-tag');document.getElementById('filter-clear').classList.remove('hidden')"
+                            hx-on-htmx-after-request="document.querySelector('input[name=query]').value = this.getAttribute('data-tag')"
                             onclick="showList()"
                             data-tag={ "#" (tag_name) }
                         {
@@ -272,7 +266,7 @@ fn text_to_html(text: &str) -> Markup {
                     }
                 },
                 Segment::Url(url) => {
-                    a href=(url) class="text-sky-600 hover:underline font-semibold" { (url) span class="text-[0.8em] align-super" { "\u{2197}" } }
+                    a href=(url) { (url) span class="md-ext-icon" { "\u{2197}" } }
                 },
             }
         }
@@ -304,134 +298,66 @@ fn render_node(node: &MdNode) -> Markup {
     match node {
         MdNode::Element(tag, children) => match tag {
             MdTag::Root => render_children(children),
-            MdTag::Paragraph => html! {
-                p class="my-4 leading-relaxed" { (render_children(children)) }
-            },
+            MdTag::Paragraph => html! { p { (render_children(children)) } },
             MdTag::Heading(level) => {
                 let id = heading_anchor(&collect_text(children));
                 let inner = render_children(children);
                 match level {
-                    1 => html! { h1 id=(id) class="text-xl font-bold mt-8 mb-4" { (inner) } },
-                    2 => html! { h2 id=(id) class="text-lg font-bold mt-6 mb-3" { (inner) } },
-                    3 => html! { h3 id=(id) class="text-base font-semibold mt-5 mb-2" { (inner) } },
-                    4 => {
-                        html! { h4 id=(id) class="text-sm font-semibold mt-4 mb-2 uppercase tracking-wide" { (inner) } }
-                    }
-                    5 => html! { h5 id=(id) class="text-sm font-medium mt-3 mb-1" { (inner) } },
-                    _ => {
-                        html! { h6 id=(id) class="text-sm font-medium mt-3 mb-1 text-gray-500 dark:text-gray-400" { (inner) } }
-                    }
+                    1 => html! { h1 id=(id) { (inner) } },
+                    2 => html! { h2 id=(id) { (inner) } },
+                    3 => html! { h3 id=(id) { (inner) } },
+                    4 => html! { h4 id=(id) { (inner) } },
+                    5 => html! { h5 id=(id) { (inner) } },
+                    _ => html! { h6 id=(id) { (inner) } },
                 }
             }
             MdTag::BlockQuote => html! {
-                blockquote class="border-s-4 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 p-4 rounded my-4 italic text-gray-700 dark:text-gray-300" {
-                    (render_children(children))
-                }
+                blockquote { (render_children(children)) }
             },
             MdTag::Admonition(kind) => {
-                let (border, bg, text_color, icon, label) = match kind {
-                    BlockQuoteKind::Note => (
-                        "border-blue-400 dark:border-blue-500",
-                        "bg-blue-50 dark:bg-blue-950",
-                        "text-blue-700 dark:text-blue-300",
-                        r#"<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>"#,
-                        "Note",
-                    ),
-                    BlockQuoteKind::Tip => (
-                        "border-green-400 dark:border-green-500",
-                        "bg-green-50 dark:bg-green-950",
-                        "text-green-700 dark:text-green-300",
-                        r#"<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5C8.26 12.26 8.72 13.02 8.91 14"/></svg>"#,
-                        "Tip",
-                    ),
-                    BlockQuoteKind::Important => (
-                        "border-purple-400 dark:border-purple-500",
-                        "bg-purple-50 dark:bg-purple-950",
-                        "text-purple-700 dark:text-purple-300",
-                        r#"<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>"#,
-                        "Important",
-                    ),
-                    BlockQuoteKind::Warning => (
-                        "border-yellow-400 dark:border-yellow-500",
-                        "bg-yellow-50 dark:bg-yellow-950",
-                        "text-yellow-700 dark:text-yellow-300",
-                        r#"<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>"#,
-                        "Warning",
-                    ),
-                    BlockQuoteKind::Caution => (
-                        "border-red-400 dark:border-red-500",
-                        "bg-red-50 dark:bg-red-950",
-                        "text-red-700 dark:text-red-300",
-                        r#"<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>"#,
-                        "Caution",
-                    ),
+                let (modifier, label) = match kind {
+                    BlockQuoteKind::Note => ("md-admonition--note", "Note"),
+                    BlockQuoteKind::Tip => ("md-admonition--tip", "Tip"),
+                    BlockQuoteKind::Important => ("md-admonition--important", "Important"),
+                    BlockQuoteKind::Warning => ("md-admonition--warning", "Warning"),
+                    BlockQuoteKind::Caution => ("md-admonition--caution", "Caution"),
                 };
-                let container_class = format!("border-s-4 {border} {bg} p-4 rounded my-4");
-                let title_class =
-                    format!("{text_color} font-semibold mb-2 flex items-center gap-2");
+                let container_class = format!("md-admonition {modifier}");
                 html! {
                     div class=(container_class) {
-                        div class=(title_class) {
-                            (PreEscaped(icon))
-                            (label)
-                        }
-                        div class="text-gray-800 dark:text-gray-200" {
-                            (render_children(children))
-                        }
+                        div class="md-admonition-title" { (label) }
+                        div { (render_children(children)) }
                     }
                 }
             }
             MdTag::CodeBlock(lang) => {
                 let code = collect_text(children);
-                let pre_class = "bg-gray-100 dark:bg-gray-900 p-4 rounded my-6 overflow-x-auto font-mono text-sm leading-relaxed";
-
                 match highlight_code(&code, lang.as_deref()) {
                     Some(highlighted) => html! {
-                        pre class=(pre_class) {
-                            code { (PreEscaped(highlighted)) }
-                        }
+                        pre { code { (PreEscaped(highlighted)) } }
                     },
                     None => html! {
-                        pre class=(pre_class) {
-                            code { (code) }
-                        }
+                        pre { code { (code) } }
                     },
                 }
             }
-            MdTag::OrderedList => html! {
-                ol class="my-4 leading-relaxed" { (render_children(children)) }
-            },
-            MdTag::UnorderedList => html! {
-                ul class="my-4 leading-relaxed" { (render_children(children)) }
-            },
-            MdTag::ListItem { ordered } => {
-                let class = if *ordered {
-                    "list-decimal ml-6 my-1"
-                } else {
-                    "list-disc ml-6 my-1"
-                };
-                html! { li class=(class) { (render_children(children)) } }
-            }
-            MdTag::Emphasis => html! {
-                em class="italic" { (render_children(children)) }
-            },
-            MdTag::Strong => html! {
-                strong class="font-bold" { (render_children(children)) }
-            },
-            MdTag::Strikethrough => html! {
-                del class="line-through" { (render_children(children)) }
-            },
+            MdTag::OrderedList => html! { ol { (render_children(children)) } },
+            MdTag::UnorderedList => html! { ul { (render_children(children)) } },
+            MdTag::ListItem => html! { li { (render_children(children)) } },
+            MdTag::Emphasis => html! { em { (render_children(children)) } },
+            MdTag::Strong => html! { strong { (render_children(children)) } },
+            MdTag::Strikethrough => html! { del { (render_children(children)) } },
             MdTag::WikiLink(url) => html! {
-                a href="#" class="text-sky-600 hover:underline font-semibold"
+                a href="#" class="md-wikilink"
                     hx-get={ "/f/" (url) }
                     hx-target="#note-content"
                     hx-push-url={ "/note/" (url) }
                 { (render_children(children)) }
             },
             MdTag::ExternalLink(url) => html! {
-                a href=(url) class="text-sky-600 hover:underline font-semibold" {
+                a href=(url) {
                     (render_children(children))
-                    span class="text-[0.8em] align-super" { "\u{2197}\u{FE0E}" }
+                    span class="md-ext-icon" { "\u{2197}\u{FE0E}" }
                 }
             },
             MdTag::Table => {
@@ -445,34 +371,20 @@ fn render_node(node: &MdNode) -> Markup {
                     }
                 }
                 html! {
-                    table class="border-collapse my-6 w-full text-sm" {
+                    table {
                         (head)
                         tbody {
-                            @for row in body_rows {
-                                (render_node(row))
-                            }
+                            @for row in body_rows { (render_node(row)) }
                         }
                     }
                 }
             }
             MdTag::TableHead => html! {
-                thead {
-                    tr class="border-b-2 border-gray-300 dark:border-gray-600" {
-                        (render_children(children))
-                    }
-                }
+                thead { tr { (render_children(children)) } }
             },
-            MdTag::TableRow => html! {
-                tr class="border-b border-gray-200 dark:border-gray-700" {
-                    (render_children(children))
-                }
-            },
-            MdTag::TableHeadCell => html! {
-                th class="px-3 py-2 text-left font-semibold" { (render_children(children)) }
-            },
-            MdTag::TableBodyCell => html! {
-                td class="px-3 py-2" { (render_children(children)) }
-            },
+            MdTag::TableRow => html! { tr { (render_children(children)) } },
+            MdTag::TableHeadCell => html! { th { (render_children(children)) } },
+            MdTag::TableBodyCell => html! { td { (render_children(children)) } },
             MdTag::Image { url, title } => {
                 let alt = collect_text(children);
                 let title = if title.is_empty() {
@@ -493,15 +405,11 @@ fn render_node(node: &MdNode) -> Markup {
         },
         MdNode::Text(t) => text_to_html(t),
         MdNode::Plain(t) => html! { (t) },
-        MdNode::InlineCode(c) => html! {
-            code class="bg-gray-100 dark:bg-gray-900 px-1 py-1.5 rounded text-[0.875em] font-mono" {
-                (c)
-            }
-        },
+        MdNode::InlineCode(c) => html! { code { (c) } },
         MdNode::RawHtml(h) => PreEscaped(h.clone()),
         MdNode::SoftBreak => PreEscaped("\n".to_owned()),
         MdNode::HardBreak => html! { br; },
-        MdNode::Rule => html! { hr class="my-8 border-gray-200 dark:border-gray-700"; },
+        MdNode::Rule => html! { hr; },
     }
 }
 

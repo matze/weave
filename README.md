@@ -17,9 +17,7 @@ opinionated. It features
 
 ## Building from source
 
-You need a Rust toolchain (1.93+) and the
-[tailwindcss](https://tailwindcss.com/blog/standalone-cli) standalone CLI binary
-in your `PATH`.
+You need a Rust toolchain (1.93+).
 
 ```bash
 git clone https://github.com/matze/weave.git

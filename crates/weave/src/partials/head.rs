@@ -1,6 +1,6 @@
-use maud::{Markup, html};
+use maud::{Markup, PreEscaped, html};
 
-/// Render the `<head>` element with meta tags, styles, and view-state JS.
+/// Render the `<head>` element with meta tags, fonts, styles, and pre-paint theme script.
 pub(crate) fn head() -> Markup {
     html! {
         head {
@@ -9,11 +9,18 @@ pub(crate) fn head() -> Markup {
             meta name="htmx-config" content=r#"{"refreshOnHistoryMiss":true}"#;
             link rel="preconnect" href="https://fonts.googleapis.com";
             link rel="preconnect" href="https://fonts.gstatic.com" crossorigin;
-            link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100..900;1,100..900&display=swap";
+            link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap";
             link rel="stylesheet" type="text/css" href="/app.css";
             link rel="stylesheet" type="text/css" href="/highlight.css";
             link rel="shortcut icon" type="image/svg+xml" href="/favicon.svg";
             title { "weave" }
+            script {
+                (PreEscaped(
+                    "(function(){try{var t=localStorage.getItem('theme');\
+                    if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}\
+                    catch(e){}})();"
+                ))
+            }
         }
     }
 }

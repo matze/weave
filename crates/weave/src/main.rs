@@ -275,6 +275,7 @@ async fn main() -> Result<()> {
         .route("/login", get(pages::login::login).post(do_login))
         .route("/logout", get(logout))
         .route("/clip", post(partials::clip::clip))
+        .route("/note", post(partials::create::create))
         .route("/f/search", post(partials::search::search))
         .route(
             "/f/{stem}",

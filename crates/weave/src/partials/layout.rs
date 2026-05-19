@@ -5,8 +5,9 @@ use crate::{Notebook, assets};
 
 /// Render the main page layout.
 ///
-/// When `show_note` is true, the sidebar is hidden and the note content is
-/// visible on mobile. This is used when rendering `/note/` pages directly.
+/// When `show_note` is true the body carries `data-note`, which hides the
+/// sidebar on mobile. The shell uses a CSS grid so that focus mode can slide
+/// the chrome out without reflowing the note column.
 pub(crate) fn layout(
     authenticated: bool,
     notebook: Notebook,
@@ -21,99 +22,136 @@ pub(crate) fn layout(
         html lang="en" {
             (partials::head::head())
 
-            body class="font-sans bg-gray-100 dark:bg-gray-900 text-black dark:text-white" data-note?[show_note] {
-              div class="max-w-7xl mx-auto flex flex-col md:flex-row h-screen bg-white dark:bg-gray-800" {
-                div id="sidebar" class="w-full md:w-80 border-b md:border-b-0 md:border-r border-gray-200 dark:border-gray-700 flex flex-col overflow-y-auto flex-shrink-0 h-screen md:h-auto" {
-                    div #sidebar-header class="relative border-b border-gray-200 dark:border-gray-700" {
-                        div #browse-row class="py-4 pr-4 pl-5 flex items-center" {
-                            span #sidebar-title class="text-xl font-black italic text-transparent bg-clip-text bg-linear-to-r/oklab from-[#5bc0e0] to-[#c060d0] whitespace-nowrap flex-shrink-0" {"weave"}
-                            div class="flex-grow" {}
-                            div class="md:hidden flex-shrink-0 ml-3" {
-                                @if !authenticated {
-                                    a href="/login" aria-label="Sign in" class="text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]" {
-                                        (assets::icons::sign_in())
-                                    }
-                                }
-                            }
-                            button #search-toggle type="button"
-                                title="Press S to search"
-                                class="ml-3 mr-2 cursor-pointer text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]" {
-                                    (assets::icons::search())
-                            }
-                        }
-                        div #search-row class="absolute inset-0 py-4 pr-4 pl-5 flex items-center" {
-                            div class="relative flex-grow min-w-0" {
-                                input #filter-input type="search"
-                                    name="query"
-                                    placeholder="Filter notes…"
-                                    class="w-full py-1.5 px-2 pr-8 text-sm rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                    hx-post="/f/search"
-                                    hx-trigger="input changed delay:300ms, keyup[key=='Enter'], notes-updated from:body"
-                                    hx-target="#search-list"
-                                    hx-swap="innerHTML"
-                                    {}
-                                button #filter-clear type="button"
-                                    class="absolute cursor-pointer right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)] hidden" {
-                                        (assets::icons::cancel())
-                                }
-                            }
+            body data-note?[show_note] {
+              div class="shell" {
+                header class="topbar" {
+                    a class="brand" href="/" { "weave" }
+
+                    div class="topbar-mid" {
+                        div class="search" {
+                            span class="search-icon" { (assets::icons::search()) }
+                            input #filter-input type="search"
+                                name="query"
+                                placeholder="Search notes by title, tag, body..."
+                                autocomplete="off"
+                                hx-post="/f/search"
+                                hx-trigger="input changed delay:300ms, keyup[key=='Enter'], notes-updated from:body"
+                                hx-target="#search-list"
+                                hx-swap="innerHTML"
+                                {}
+                            span class="search-kbd" { "/" }
                         }
                     }
 
-                    div class="flex-grow overflow-y-auto max-h-xs md:max-h-none" id="search-list" {
-                        (partials::note_list::note_list(notes))
+                    div class="actions" {
+                        @if show_note {
+                            div class="segctl" #mode-segctl {
+                                button type="button" #mode-read class="is-on" data-mode="read"
+                                    title="Read (V)" aria-label="Read" {
+                                    (assets::icons::eye()) span { "Read" }
+                                }
+                                button type="button" #mode-edit data-mode="edit"
+                                    title="Edit (E)" aria-label="Edit" {
+                                    (assets::icons::pencil()) span { "Edit" }
+                                }
+                            }
+                            button type="button" class="tb-btn" #focus-toggle
+                                title="Focus mode (F)" aria-label="Focus mode" aria-pressed="false" {
+                                (assets::icons::focus_brackets())
+                            }
+                            span class="tb-divider" {}
+                        }
+                        @if authenticated {
+                            button type="button" class="tb-btn" #clip-toggle
+                                title="Clip URL (C)" aria-label="Clip URL" {
+                                (assets::icons::link())
+                            }
+                            button type="button" class="tb-btn" #new-note
+                                title="New note (N)" aria-label="New note"
+                                hx-post="/note"
+                                hx-swap="none" {
+                                (assets::icons::plus())
+                            }
+                        }
+                        button type="button" class="tb-btn" #theme-toggle
+                            title="Toggle theme (D)" aria-label="Toggle theme" {
+                            (assets::icons::moon())
+                        }
+                        @if authenticated {
+                            a href="/logout" class="tb-btn" aria-label="Sign out" title="Sign out" {
+                                (assets::icons::sign_out())
+                            }
+                        } @else {
+                            a href="/login" class="tb-btn" aria-label="Sign in" title="Sign in" {
+                                (assets::icons::sign_in())
+                            }
+                        }
                     }
                 }
 
-                div class="flex flex-grow flex-col overflow-y-auto h-screen md:h-auto md:basis-1/2" id="note-content" {
-                    @if content.0.is_empty() {
-                        div id="title-bar" class="relative p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0" {
-                            div class="flex items-center text-xl" {
-                                span class="invisible font-black" { "\u{00a0}" }
-                                div class="flex items-center gap-4 ml-auto" {
-                                    @if authenticated {
-                                        button #clip-toggle type="button"
-                                            title="Press C to clip a URL"
-                                            class="cursor-pointer text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]" {
-                                            (assets::icons::clip())
-                                        }
-                                        a href="/logout" aria-label="Sign out" class="hidden md:block text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]" {
-                                            (assets::icons::sign_out())
-                                        }
-                                    } @else {
-                                        a href="/login" aria-label="Sign in" class="text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]" {
-                                            (assets::icons::sign_in())
-                                        }
-                                    }
-                                }
-                            }
-                            @if authenticated {
-                                div #clip-row class="absolute inset-0 p-4 flex items-center" {
-                                    div class="relative flex-grow min-w-0" {
-                                        input #clip-input type="url"
-                                            name="url"
-                                            placeholder="Paste URL to clip…"
-                                            class="w-full py-1.5 px-2 pr-8 text-sm rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                            hx-post="/clip"
-                                            hx-trigger="keyup[key=='Enter']"
-                                            hx-swap="none"
-                                            {}
-                                        button #clip-cancel type="button"
-                                            class="absolute cursor-pointer right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]" {
-                                            (assets::icons::cancel())
-                                        }
-                                    }
-                                }
+                @if authenticated {
+                    div class="clip-drawer" #clip-drawer {
+                        h3 { "Clip a URL" }
+                        div class="clip-row" {
+                            input #clip-input type="url" name="url"
+                                placeholder="https://…"
+                                hx-post="/clip"
+                                hx-trigger="keyup[key=='Enter']"
+                                hx-swap="none"
+                                {}
+                            button type="button" class="btn btn-ghost" #clip-cancel {
+                                "Cancel"
                             }
                         }
-                    } @else {
-                        (content)
                     }
                 }
+
+                div class="body-grid" {
+                    aside class="sidebar" {
+                        div id="search-list" class="note-list" {
+                            (partials::note_list::note_list(notes))
+                        }
+                    }
+
+                    main class="main" id="note-content" {
+                        @if content.0.is_empty() {
+                            (welcome(authenticated))
+                        } @else {
+                            (content)
+                        }
+                    }
+                }
+
               }
 
                 script src="/htmx.2.0.4.min.js" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" {}
                 script src="/app.js" {}
+            }
+        }
+    }
+}
+
+fn welcome(authenticated: bool) -> Markup {
+    html! {
+        div class="welcome" {
+            p class="welcome-tip" {
+                "Press "
+                span class="kbd" { "/" }
+                " to search, "
+                span class="kbd" { "J" }
+                "/"
+                span class="kbd" { "K" }
+                " to navigate"
+                @if authenticated {
+                    ", "
+                    span class="kbd" { "N" }
+                    " for a new note, "
+                    span class="kbd" { "C" }
+                    " to clip a URL"
+                }
+                ", "
+                span class="kbd" { "D" }
+                " to toggle theme."
             }
         }
     }

@@ -3,88 +3,64 @@ use maud::{Markup, html};
 use crate::assets::icons;
 use crate::zk::{self, NoteExt};
 
-enum Note<'a> {
-    Regular(&'a zk::Note),
-    Pinned(&'a zk::Note),
-    Archived(&'a zk::Note),
+enum Kind {
+    Regular,
+    Pinned,
+    Archived,
 }
 
-impl<'a> Note<'a> {
-    fn new(note: &'a zk::Note) -> Self {
-        if note.has("pin") {
-            Self::Pinned(note)
-        } else if note.has("archived") {
-            Self::Archived(note)
-        } else {
-            Self::Regular(note)
-        }
-    }
-
-    fn inner(&self) -> &zk::Note {
-        match self {
-            Self::Regular(n) | Self::Pinned(n) | Self::Archived(n) => n,
-        }
+fn classify(note: &zk::Note) -> Kind {
+    if note.has("pin") {
+        Kind::Pinned
+    } else if note.has("archived") {
+        Kind::Archived
+    } else {
+        Kind::Regular
     }
 }
 
 /// Render a list of notes for the sidebar.
 ///
-/// Notes tagged `#pin` are grouped at the top. Notes tagged `#archived` are
-/// grouped at the bottom with greyed-out styling.
+/// `#pin` notes are grouped at the top, `#archived` at the bottom (greyed out),
+/// regular notes in the middle in modified-date order.
 pub(crate) fn note_list<'a>(notes: impl IntoIterator<Item = &'a zk::Note>) -> Markup {
-    let notes = notes.into_iter().map(Note::new).collect::<Vec<_>>();
-    let pinned = notes.iter().filter(|note| matches!(note, Note::Pinned(_)));
-    let regular = notes.iter().filter(|note| matches!(note, Note::Regular(_)));
-    let archived = notes
-        .iter()
-        .filter(|note| matches!(note, Note::Archived(_)));
+    let notes: Vec<&zk::Note> = notes.into_iter().collect();
 
     html! {
-        @for note in pinned {
-            (note_item(note))
+        @for note in notes.iter().filter(|n| matches!(classify(n), Kind::Pinned)) {
+            (note_row(note, Kind::Pinned))
         }
-
-        @for note in regular {
-            (note_item(note))
+        @for note in notes.iter().filter(|n| matches!(classify(n), Kind::Regular)) {
+            (note_row(note, Kind::Regular))
         }
-
-        @for note in archived {
-            (note_item(note))
+        @for note in notes.iter().filter(|n| matches!(classify(n), Kind::Archived)) {
+            (note_row(note, Kind::Archived))
         }
     }
 }
 
-fn note_item(note: &Note) -> Markup {
-    let (title_class, snippet_class) = match note {
-        Note::Regular(_) | Note::Pinned(_) => (
-            "text-md font-semibold text-gray-900 dark:text-white",
-            "text-sm text-gray-600 dark:text-gray-300 truncate block",
-        ),
-        Note::Archived(_) => (
-            "text-md font-semibold text-gray-400 dark:text-gray-500",
-            "text-sm text-gray-400 dark:text-gray-500 truncate block",
-        ),
+fn note_row(note: &zk::Note, kind: Kind) -> Markup {
+    let row_class = match kind {
+        Kind::Regular => "note-row",
+        Kind::Pinned => "note-row note-row--pinned",
+        Kind::Archived => "note-row note-row--archived",
     };
-    let is_pinned = matches!(note, Note::Pinned(_));
-    let note = note.inner();
+    let is_pinned = matches!(kind, Kind::Pinned);
 
     html! {
-        div
-            class="note-item p-4 border-l-4 border-l-transparent border-b border-gray-200 dark:border-gray-700 dark:border-l-transparent cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 hover:border-l-blue-400 active:bg-gray-200 dark:active:bg-gray-600"
+        div class=(row_class)
             data-stem=(note.filename_stem())
             hx-get={ "/f/" (note.filename_stem()) }
             hx-target="#note-content"
             hx-push-url={ "/note/" (note.filename_stem()) }
             onclick="showNote(event)" {
-            div class="flex items-center justify-between" {
-                div class="min-w-0" {
-                    h3 class=(title_class) { (note.title()) }
-                    p class=(snippet_class) { (note.snippet()) }
-                }
+            div class="nr-top" {
+                span class="nr-title" { (note.title()) }
                 @if is_pinned {
-                    span class="ml-2 mr-2 flex-shrink-0 text-gray-500" { (icons::pin()) }
+                    span class="nr-pin" { (icons::pin()) }
                 }
             }
+            p class="nr-preview" { (note.snippet()) }
         }
     }
 }

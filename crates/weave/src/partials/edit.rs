@@ -4,46 +4,32 @@ use maud::{Markup, html};
 
 use crate::extract::Authenticated;
 use crate::partials::note_nav::{NoteNavData, note_nav};
-use crate::{Notebook, assets, md};
+use crate::{Notebook, md};
 
 const HX_TRIGGER: axum::http::HeaderName = axum::http::HeaderName::from_static("hx-trigger");
 
 fn edit_form(stem: &str, body: &str) -> Markup {
     html! {
-        div class="flex flex-col h-full" {
-            div class="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex-shrink-0" {
-                button
-                    class="md:hidden p-1 -ml-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                    onclick="goBack()"
-                    aria-label="Back to notes" {
-                    (assets::icons::back())
+        article class="note" data-stem=(stem) data-mode="edit" {
+            form class="editor" {
+                textarea id="editor-textarea" name="body" class="editor-input"
+                    placeholder="Write your note here…" {
+                    (body)
                 }
-                div class="flex-grow" {}
-                button id="editor-save"
-                    class="px-4 py-1.5 cursor-pointer font-medium text-white bg-sky-600 rounded hover:bg-sky-700"
-                    hx-put={ "/f/" (stem) }
-                    hx-include="#editor-textarea"
-                    hx-target="#note-content" {
-                    "Save"
+                footer class="editor-actions" {
+                    button type="button" id="editor-cancel" class="btn btn-ghost"
+                        hx-get={ "/f/" (stem) }
+                        hx-target="#note-content"
+                        hx-push-url="false" {
+                        "Cancel"
+                    }
+                    button type="button" id="editor-save" class="btn btn-primary"
+                        hx-put={ "/f/" (stem) }
+                        hx-include="#editor-textarea"
+                        hx-target="#note-content" {
+                        "Save"
+                    }
                 }
-                button
-                    class="px-4 py-1.5 cursor-pointer font-medium text-gray-600 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                    hx-get={ "/f/" (stem) }
-                    hx-target="#note-content"
-                    hx-push-url="false" {
-                    "Cancel"
-                }
-            }
-
-            textarea id="editor-textarea"
-                name="body"
-                class="flex-grow p-4 font-mono bg-white dark:bg-gray-800 text-black dark:text-white resize-none focus:outline-none"
-                placeholder="Write your note here..." {
-                (body)
-            }
-
-            div id="preview-area" class="hidden flex-grow px-4 pt-6 pb-4 overflow-y-auto" {
-                div id="preview-content" class="prose dark:prose-invert" {}
             }
         }
     }
@@ -117,38 +103,22 @@ pub(crate) async fn save(
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)??;
 
+    let has_rail = !nav_data.is_empty();
+    let body_class = if has_rail {
+        "note-body"
+    } else {
+        "note-body no-rail"
+    };
+
     Ok((
         [(HX_TRIGGER, "notes-updated")],
         html! {
-            div class="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0" {
-                div class="flex items-center gap-3" {
-                    button
-                        class="md:hidden px-1 -ml-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                        onclick="goBack()"
-                        aria-label="Back to notes" {
-                        (assets::icons::back())
-                    }
-                    h2 class="text-xl font-bold dark:text-white flex-grow" { (title) }
-                    div class="flex items-center gap-4 ml-auto" {
-                        button
-                            class="cursor-pointer"
-                            hx-get={ "/f/" (stem) "/edit" }
-                            hx-target="#note-content"
-                            aria-label="Edit note" {
-                            (assets::icons::edit())
-                        }
-                        a href="/logout" aria-label="Sign out" class="hidden md:block" {
-                            (assets::icons::sign_out())
-                        }
-                    }
+            article class="note" data-stem=(stem) data-mode="read" {
+                header class="note-head" { h1 { (title) } }
+                div class=(body_class) {
+                    div class="md" { (rendered) }
+                    @if has_rail { (note_nav(&nav_data)) }
                 }
-            }
-
-            div class="flex flex-row flex-grow overflow-hidden min-h-0" {
-                div class="flex-grow px-4 pt-6 pb-4 overflow-y-auto min-w-0" {
-                    div class="prose dark:prose-invert" { (rendered) }
-                }
-                (note_nav(&nav_data))
             }
         },
     ))

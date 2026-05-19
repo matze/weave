@@ -3,9 +3,9 @@ use maud::{Markup, html};
 
 use crate::extract::Authenticated;
 use crate::partials::note_nav::{NoteNavData, note_nav};
-use crate::{Notebook, assets, md};
+use crate::{Notebook, md};
 
-/// Return note content fragment consisting of title div and rendered markdown.
+/// Return note content fragment: <article class="note"> with header + body.
 pub(crate) async fn note(
     State(notebook): State<Notebook>,
     Authenticated(authenticated): Authenticated,
@@ -17,26 +17,8 @@ pub(crate) async fn note(
 
     if !authenticated && !note.has("public") {
         return html! {
-            div class="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0" {
-                div class="flex items-center gap-3" {
-                    button
-                        class="md:hidden px-1 -ml-3 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                        onclick="goBack()"
-                        aria-label="Back to notes" {
-                        (assets::icons::back())
-                    }
-                    span class="invisible font-black text-xl flex-grow" { "\u{00a0}" }
-                    div class="flex items-center gap-4 ml-auto" {
-                        a href="/login" aria-label="Sign in" class="text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]" {
-                            (assets::icons::sign_in())
-                        }
-                    }
-                }
-            }
-            div class="flex-grow flex items-center justify-center" {
-                div class="flex flex-col items-center justify-center p-8 text-center" {
-                    h2 class="text-xl font-bold text-gray-400 dark:text-gray-500" { "access denied" }
-                }
+            article class="note" data-stem=(stem) data-mode="read" {
+                div class="note-empty" { "access denied" }
             }
         };
     }
@@ -61,68 +43,21 @@ pub(crate) async fn note(
         backlinks,
         tags,
     };
+    let has_rail = !nav_data.is_empty();
+
+    let body_class = if has_rail {
+        "note-body"
+    } else {
+        "note-body no-rail"
+    };
 
     html! {
-        div id="title-bar" class="relative p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0" {
-            div class="flex items-center gap-3 min-w-0" {
-                button
-                    class="md:hidden px-1 -ml-3 flex-shrink-0 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                    onclick="goBack()"
-                    aria-label="Back to notes" {
-                    (assets::icons::back())
-                }
-                h2 class="text-xl font-bold dark:text-white truncate" { (title) }
-                div id="title-buttons" class="flex items-center gap-6 ml-auto flex-shrink-0" {
-                    @if authenticated {
-                        button
-                            class="cursor-pointer text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]"
-                            hx-get={ "/f/" (stem) "/edit" }
-                            hx-target="#note-content"
-                            aria-label="Edit note" {
-                            (assets::icons::edit())
-                        }
-                        button #clip-toggle type="button"
-                            title="Press C to clip a URL"
-                            class="cursor-pointer text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]" {
-                            (assets::icons::clip())
-                        }
-                    }
-                    @if authenticated {
-                        a href="/logout" aria-label="Sign out" class="hidden md:block text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]" {
-                            (assets::icons::sign_out())
-                        }
-                    } @else {
-                        a href="/login" aria-label="Sign in" class="text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]" {
-                            (assets::icons::sign_in())
-                        }
-                    }
-                }
+        article class="note" data-stem=(stem) data-mode="read" {
+            header class="note-head" { h1 { (title) } }
+            div class=(body_class) {
+                div class="md" { (rendered) }
+                @if has_rail { (note_nav(&nav_data)) }
             }
-            @if authenticated {
-                div #clip-row class="absolute inset-0 p-4 flex items-center" {
-                    div class="relative flex-grow min-w-0" {
-                        input #clip-input type="url"
-                            name="url"
-                            placeholder="Paste URL to clip…"
-                            class="w-full py-1.5 px-2 pr-8 text-sm rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            hx-post="/clip"
-                            hx-trigger="keyup[key=='Enter']"
-                            hx-swap="none"
-                            {}
-                        button #clip-cancel type="button"
-                            class="absolute cursor-pointer right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:[filter:drop-shadow(0_0_0.5px_currentColor)]" {
-                            (assets::icons::cancel())
-                        }
-                    }
-                }
-            }
-        }
-
-        div class="flex flex-row flex-grow overflow-hidden min-h-0" {
-            div class="flex-grow px-4 pt-6 pb-4 overflow-y-auto min-w-0" {
-                div class="prose dark:prose-invert" { (rendered) }
-            }
-            (note_nav(&nav_data))
         }
     }
 }

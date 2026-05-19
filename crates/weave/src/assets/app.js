@@ -1,279 +1,307 @@
+// ── helpers ───────────────────────────────────────────────────────────────
+
 function stemFromUrl() {
     var m = location.pathname.match(/^\/(note|f)\/(.+)/);
     return m ? decodeURIComponent(m[2]) : null;
 }
 
+function currentArticle() {
+    return document.querySelector('#note-content article.note');
+}
+
+function currentMode() {
+    var a = currentArticle();
+    return a ? a.getAttribute('data-mode') : null;
+}
+
+// ── view sync ─────────────────────────────────────────────────────────────
+
 function syncView(scroll) {
     var stem = stemFromUrl();
     document.body.toggleAttribute('data-note', !!stem);
-    document.querySelectorAll('.note-item.active-note').forEach(function(el) {
-        el.classList.remove('active-note');
+
+    document.querySelectorAll('.note-row.is-active').forEach(function(el) {
+        el.classList.remove('is-active');
     });
     if (stem) {
-        var el = document.querySelector('.note-item[data-stem="' + CSS.escape(stem) + '"]');
-        if (el) {
-            el.classList.add('active-note');
-            if (scroll) el.scrollIntoView({block: 'nearest'});
+        var row = document.querySelector('.note-row[data-stem="' + CSS.escape(stem) + '"]');
+        if (row) {
+            row.classList.add('is-active');
+            if (scroll) row.scrollIntoView({ block: 'nearest' });
         }
     }
-    var h2 = document.querySelector('#note-content h2');
-    document.title = h2 ? h2.textContent + ' \u{2013} weave' : 'weave';
+
+    var article = currentArticle();
+    var hasNote = !!article;
+    var mode = hasNote ? article.getAttribute('data-mode') : null;
+
+    var segctl = document.getElementById('mode-segctl');
+    var focusToggle = document.getElementById('focus-toggle');
+    if (segctl) segctl.style.display = hasNote ? '' : 'none';
+    if (focusToggle) focusToggle.style.display = hasNote ? '' : 'none';
+    var divider = document.querySelector('.actions .tb-divider');
+    if (divider) divider.style.display = hasNote ? '' : 'none';
+
+    if (segctl) {
+        segctl.querySelectorAll('button').forEach(function(b) {
+            b.classList.toggle('is-on', b.getAttribute('data-mode') === mode);
+        });
+    }
+    if (!hasNote && document.documentElement.classList.contains('is-focus')) {
+        exitFocus();
+    }
+
+    var h1 = document.querySelector('#note-content .note-head h1');
+    document.title = h1 ? h1.textContent + ' – weave' : 'weave';
 }
 
 function showNote(e) {
     if (e && e.currentTarget) {
-        document.querySelectorAll('.note-item.active-note').forEach(function(el) {
-            el.classList.remove('active-note');
+        document.querySelectorAll('.note-row.is-active').forEach(function(el) {
+            el.classList.remove('is-active');
         });
-        e.currentTarget.classList.add('active-note');
-        e.currentTarget.style.position = 'relative';
+        e.currentTarget.classList.add('is-active');
         document.body.dataset.note = '1';
     }
 }
 
-function showList() {
-    delete document.body.dataset.note;
-}
+function showList() { delete document.body.dataset.note; }
 
 function goBack() {
     if (history.length > 1) history.back();
     else location.href = '/';
 }
 
+// ── focus mode ────────────────────────────────────────────────────────────
+
+function focusShell() { return document.querySelector('.shell'); }
+
+function enterFocus() {
+    if (!currentArticle()) return;
+    var shell = focusShell();
+    if (!shell) return;
+    shell.classList.add('is-focus');
+    var btn = document.getElementById('focus-toggle');
+    if (btn) { btn.classList.add('is-on'); btn.setAttribute('aria-pressed', 'true'); }
+    try { localStorage.setItem('focus', '1'); } catch (e) {}
+}
+
+function exitFocus() {
+    var shell = focusShell();
+    if (!shell) return;
+    shell.classList.remove('is-focus');
+    var btn = document.getElementById('focus-toggle');
+    if (btn) { btn.classList.remove('is-on'); btn.setAttribute('aria-pressed', 'false'); }
+    try { localStorage.removeItem('focus'); } catch (e) {}
+}
+
 function toggleFocus() {
-    if (window.innerWidth < 768) return;
-    var prose = document.querySelector('#note-content .prose');
-    var titleBar = document.querySelector('#note-content > div:first-child > div');
-    if (document.body.classList.contains('focus-mode')) {
-        var els = [prose, titleBar].filter(Boolean);
-        els.forEach(function(el) {
-            el.style.maxWidth = el.offsetWidth + 'px';
-            el.style.marginLeft = getComputedStyle(el).marginLeft;
-            el.style.marginRight = getComputedStyle(el).marginRight;
-        });
-        document.body.classList.add('focus-expanding');
-        document.body.classList.remove('focus-mode');
-        requestAnimationFrame(function() {
-            els.forEach(function(el) {
-                el.style.marginLeft = '';
-                el.style.marginRight = '';
-            });
-        });
-        document.getElementById('sidebar').addEventListener('transitionend', function handler(e) {
-            if (e.propertyName === 'width') {
-                els.forEach(function(el) { el.style.maxWidth = ''; });
-                document.body.classList.remove('focus-expanding');
-                document.getElementById('sidebar').removeEventListener('transitionend', handler);
-            }
-        });
+    var shell = focusShell();
+    if (!shell) return;
+    if (shell.classList.contains('is-focus')) exitFocus();
+    else enterFocus();
+}
+
+// ── theme ─────────────────────────────────────────────────────────────────
+
+var ICON_MOON = '<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+var ICON_SUN = '<svg class="icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v2"/><path d="M12 21v2"/><path d="M4.22 4.22l1.42 1.42"/><path d="M18.36 18.36l1.42 1.42"/><path d="M1 12h2"/><path d="M21 12h2"/><path d="M4.22 19.78l1.42-1.42"/><path d="M18.36 5.64l1.42-1.42"/><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg>';
+
+function currentTheme() {
+    var stored = null;
+    try { stored = localStorage.getItem('theme'); } catch (e) {}
+    if (stored === 'dark' || stored === 'light') return stored;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function applyTheme(theme, persist) {
+    if (theme === 'dark' || theme === 'light') {
+        document.documentElement.setAttribute('data-theme', theme);
+        if (persist) try { localStorage.setItem('theme', theme); } catch (e) {}
     } else {
-        var proseWidth = prose ? prose.offsetWidth : 0;
-        if (prose) {
-            document.body.style.setProperty('--focus-prose-width', proseWidth + 'px');
-        }
-
-        // Calculate final centered margin for the title bar so it
-        // transitions in sync with the sidebar collapse (both use the
-        // same 0.3s ease timing), avoiding the non-linear motion that
-        // margin:auto causes when the container width is also changing.
-        if (titleBar) {
-            var sidebarWidth = sidebar.offsetWidth;
-            var targetWidth = proseWidth || titleBar.offsetWidth;
-            var finalMargin = Math.max(0, (titleBar.offsetWidth + sidebarWidth - targetWidth) / 2);
-
-            titleBar.style.maxWidth = targetWidth + 'px';
-            titleBar.style.marginLeft = '0px';
-            titleBar.style.marginRight = '0px';
-        }
-
-        document.body.classList.add('focus-mode');
-
-        if (titleBar) {
-            requestAnimationFrame(function() {
-                titleBar.style.marginLeft = finalMargin + 'px';
-                titleBar.style.marginRight = finalMargin + 'px';
-            });
-            sidebar.addEventListener('transitionend', function handler(e) {
-                if (e.propertyName === 'width') {
-                    titleBar.style.marginLeft = '';
-                    titleBar.style.marginRight = '';
-                    titleBar.style.maxWidth = '';
-                    sidebar.removeEventListener('transitionend', handler);
-                }
-            });
-        }
+        document.documentElement.removeAttribute('data-theme');
+        if (persist) try { localStorage.removeItem('theme'); } catch (e) {}
     }
+    var btn = document.getElementById('theme-toggle');
+    if (btn) btn.innerHTML = currentTheme() === 'dark' ? ICON_SUN : ICON_MOON;
 }
 
-function activateSearch() {
-    document.getElementById('sidebar-header').classList.add('search-active');
-    document.getElementById('filter-clear').classList.remove('hidden');
-    document.getElementById('filter-input').focus();
+function toggleTheme() {
+    applyTheme(currentTheme() === 'dark' ? 'light' : 'dark', true);
 }
 
-function activateClip() {
-    var tb = document.getElementById('title-bar');
-    if (tb) {
-        tb.classList.add('clip-active');
-        var ci = document.getElementById('clip-input');
-        if (ci) ci.focus();
+// ── clip drawer ───────────────────────────────────────────────────────────
+
+function openClip() {
+    var d = document.getElementById('clip-drawer');
+    if (!d) return;
+    d.classList.add('is-open');
+    var i = document.getElementById('clip-input');
+    if (i) i.focus();
+}
+
+function closeClip() {
+    var d = document.getElementById('clip-drawer');
+    if (!d) return;
+    d.classList.remove('is-open');
+    var i = document.getElementById('clip-input');
+    if (i) { i.value = ''; i.blur(); }
+}
+
+function clipOpen() {
+    var d = document.getElementById('clip-drawer');
+    return !!(d && d.classList.contains('is-open'));
+}
+
+// ── search ────────────────────────────────────────────────────────────────
+
+function focusSearch() {
+    var i = document.getElementById('filter-input');
+    if (i) { i.focus(); i.select(); }
+}
+
+function clearSearch() {
+    var i = document.getElementById('filter-input');
+    if (!i) return;
+    i.value = '';
+    htmx.ajax('POST', '/f/search', { target: '#search-list', values: { query: '' } });
+    i.blur();
+}
+
+// ── mode toggle (Read / Edit) ─────────────────────────────────────────────
+
+function switchMode(mode) {
+    var stem = stemFromUrl();
+    if (!stem) return;
+    if (mode === currentMode()) return;
+    if (mode === 'read' && currentMode() === 'edit') {
+        // Auto-save: clicking Save PUTs the textarea and the server returns
+        // the read-mode article, which HTMX swaps into #note-content.
+        var save = document.getElementById('editor-save');
+        if (save) { save.click(); return; }
     }
+    var url = mode === 'edit' ? '/f/' + encodeURIComponent(stem) + '/edit'
+                              : '/f/' + encodeURIComponent(stem);
+    htmx.ajax('GET', url, { target: '#note-content' });
 }
 
-function deactivateClip() {
-    var tb = document.getElementById('title-bar');
-    if (tb) tb.classList.remove('clip-active');
-    var ci = document.getElementById('clip-input');
-    if (ci) {
-        ci.value = '';
-        ci.blur();
-    }
-}
-
-function deactivateSearch() {
-    document.getElementById('sidebar-header').classList.remove('search-active');
-    var fi = document.getElementById('filter-input');
-    fi.value = '';
-    fi.blur();
-    htmx.ajax('POST', '/f/search', {target: '#search-list', values: {query: ''}});
-    var searchRow = document.getElementById('search-row');
-    searchRow.addEventListener('transitionend', function handler() {
-        document.getElementById('filter-clear').classList.add('hidden');
-        searchRow.removeEventListener('transitionend', handler);
-    });
-}
+// ── keyboard ──────────────────────────────────────────────────────────────
 
 document.addEventListener('keydown', function(e) {
+    var t = document.activeElement;
+    var inInput = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+
     if (e.key === 'Escape') {
-        if (document.body.classList.contains('focus-mode')) {
-            toggleFocus();
-            return;
-        }
-        if (document.activeElement === document.getElementById('clip-input')) {
-            deactivateClip();
-            return;
-        }
-        if (document.activeElement === document.getElementById('filter-input')) {
-            deactivateSearch();
-            return;
-        }
+        if (clipOpen()) { closeClip(); return; }
+        var fi = document.getElementById('filter-input');
+        if (fi && fi.value) { clearSearch(); return; }
+        if (document.querySelector('.shell.is-focus')) { exitFocus(); return; }
+        if (inInput) { t.blur(); return; }
+        return;
     }
-    if (e.key === 'Tab' && document.activeElement === document.getElementById('filter-input')) {
+
+    if (e.key === 'Tab' && t === document.getElementById('filter-input')) {
         e.preventDefault();
-        deactivateSearch();
-        var first = document.querySelector('#search-list .note-item');
+        var first = document.querySelector('#search-list .note-row');
         if (first) {
             first.click();
-            first.scrollIntoView({block: 'nearest'});
+            first.scrollIntoView({ block: 'nearest' });
         }
         return;
     }
-    var t = document.activeElement.tagName;
-    if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return;
-    if (e.key === 'e') {
-        var btn = document.querySelector('[aria-label="Edit note"]');
-        if (btn) btn.click();
-    } else if (e.key === 'f' && !e.ctrlKey && !e.metaKey) {
+
+    if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === '/' && !inInput)) {
         e.preventDefault();
-        toggleFocus();
-    } else if (e.key === 'c') {
-        var clipToggle = document.getElementById('clip-toggle');
-        if (clipToggle) {
-            e.preventDefault();
-            activateClip();
+        focusSearch();
+        return;
+    }
+
+    if (inInput) return;
+
+    switch (e.key) {
+        case 'e': e.preventDefault(); switchMode('edit'); return;
+        case 'v': e.preventDefault(); switchMode('read'); return;
+        case 'f': e.preventDefault(); toggleFocus(); return;
+        case 'd': e.preventDefault(); toggleTheme(); return;
+        case 'c': {
+            var clipBtn = document.getElementById('clip-toggle');
+            if (clipBtn) { e.preventDefault(); openClip(); }
+            return;
         }
-    } else if (e.key === 's') {
-        e.preventDefault();
-        activateSearch();
-    } else if (e.key === 'j' || e.key === 'k') {
-        var items = Array.from(document.querySelectorAll('#search-list .note-item'));
-        if (!items.length) return;
-        var active = document.querySelector('.note-item.active-note');
-        var idx = active ? items.indexOf(active) : -1;
-        var next = e.key === 'j' ? idx + 1 : idx - 1;
-        if (next < 0 || next >= items.length) return;
-        items[next].click();
-        items[next].scrollIntoView({block: 'nearest'});
+        case 'n': {
+            var newBtn = document.getElementById('new-note');
+            if (newBtn) { e.preventDefault(); newBtn.click(); }
+            return;
+        }
+        case 'j':
+        case 'k': {
+            var items = Array.from(document.querySelectorAll('#search-list .note-row'));
+            if (!items.length) return;
+            var active = document.querySelector('.note-row.is-active');
+            var idx = active ? items.indexOf(active) : -1;
+            var next = e.key === 'j' ? idx + 1 : idx - 1;
+            if (next < 0 || next >= items.length) return;
+            items[next].click();
+            items[next].scrollIntoView({ block: 'nearest' });
+            return;
+        }
     }
 });
 
+// ── click delegation ──────────────────────────────────────────────────────
+
+document.addEventListener('click', function(e) {
+    if (e.target.closest('#clip-toggle')) { openClip(); }
+    else if (e.target.closest('#clip-cancel')) { closeClip(); }
+    else if (e.target.closest('#focus-toggle')) { toggleFocus(); }
+    else if (e.target.closest('#theme-toggle')) { toggleTheme(); }
+    else {
+        var seg = e.target.closest('.segctl > button');
+        if (seg) { switchMode(seg.getAttribute('data-mode')); }
+    }
+});
+
+// ── init ──────────────────────────────────────────────────────────────────
+
 document.addEventListener('DOMContentLoaded', function() {
+    applyTheme(currentTheme(), false);
+    var persisted = null;
+    try { persisted = localStorage.getItem('focus'); } catch (e) {}
+    if (persisted) enterFocus();
     syncView(true);
 });
 
-// Use event delegation so listeners survive HTMX history cache restores
-// which replace DOM elements and lose directly-bound listeners.
-document.addEventListener('input', function(e) {
-    if (e.target.id === 'filter-input') {
-        var inSearchMode = document.getElementById('sidebar-header').classList.contains('search-active');
-        if (!inSearchMode) {
-            document.getElementById('filter-clear').classList.toggle('hidden', !e.target.value);
-        }
-    }
-});
-
-document.addEventListener('click', function(e) {
-    if (e.target.closest('#clip-toggle')) {
-        activateClip();
-    } else if (e.target.closest('#clip-cancel')) {
-        deactivateClip();
-    } else if (e.target.closest('#search-toggle')) {
-        activateSearch();
-    } else if (e.target.closest('#filter-clear')) {
-        deactivateSearch();
-    }
-});
+// Follow OS preference live, unless user has picked manually
+try {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
+        var stored = localStorage.getItem('theme');
+        if (stored !== 'dark' && stored !== 'light') applyTheme(null, false);
+    });
+} catch (e) {}
 
 window.addEventListener('popstate', function() {
     var stem = stemFromUrl();
-    if (stem) {
-        htmx.ajax('GET', '/f/' + encodeURIComponent(stem), {target: '#note-content'});
-    }
+    if (stem) htmx.ajax('GET', '/f/' + encodeURIComponent(stem), { target: '#note-content' });
     syncView(true);
 });
 
 document.addEventListener('htmx:historyRestore', function() {
     syncView(true);
-    var filterInput = document.getElementById('filter-input');
-    var filterClear = document.getElementById('filter-clear');
-    if (filterInput && filterClear) {
-        filterClear.classList.toggle('hidden', !filterInput.value);
-        htmx.ajax('POST', '/f/search', {target: '#search-list', values: {query: filterInput.value}});
-        if (filterInput.value) {
-            document.getElementById('sidebar-header').classList.add('search-active');
-        }
-    }
 });
 
 document.addEventListener('htmx:afterRequest', function(e) {
-    if (e.detail.elt && e.detail.elt.id === 'clip-input') {
-        deactivateClip();
-    }
+    if (e.detail.elt && e.detail.elt.id === 'clip-input') closeClip();
 });
 
 document.addEventListener('htmx:afterSettle', function(e) {
-    if (e.detail.target.id === 'note-content') {
-        syncView(false);
-    }
+    if (e.detail.target && e.detail.target.id === 'note-content') syncView(false);
 });
 
 function showNoteError(message) {
     var nc = document.getElementById('note-content');
     if (!nc) return;
     nc.innerHTML =
-        '<div class="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">' +
-          '<div class="flex items-center gap-3">' +
-            '<button class="md:hidden p-1 -ml-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700" onclick="goBack()" aria-label="Back to notes">' +
-              '<svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>' +
-            '</button>' +
-            '<span class="invisible font-black text-xl flex-grow">\u00a0</span>' +
-          '</div>' +
-        '</div>' +
-        '<div class="flex-grow flex items-center justify-center">' +
-          '<div class="flex flex-col items-center justify-center p-8 text-center">' +
-            '<h2 class="text-xl font-bold text-gray-400 dark:text-gray-500">' + message + '</h2>' +
-          '</div>' +
-        '</div>';
+        '<article class="note"><div class="note-empty">' + message + '</div></article>';
 }
 
 document.addEventListener('htmx:sendError', function(e) {
@@ -288,6 +316,8 @@ document.addEventListener('htmx:responseError', function(e) {
     }
 });
 
+// ── SSE live reload ───────────────────────────────────────────────────────
+
 (function() {
     var source = new EventSource('/events');
     source.addEventListener('notes-updated', function(e) {
@@ -297,7 +327,7 @@ document.addEventListener('htmx:responseError', function(e) {
             var current = stemFromUrl();
             if (current && current === data.stem) {
                 if (data.removed) showNoteError('note was removed');
-                else htmx.ajax('GET', '/f/' + encodeURIComponent(data.stem), {target: '#note-content'});
+                else htmx.ajax('GET', '/f/' + encodeURIComponent(data.stem), { target: '#note-content' });
             }
         } catch (err) {}
     });
