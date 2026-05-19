@@ -828,13 +828,38 @@ button { font: inherit; color: inherit; }
   .note-nav { display: none; }
 }
 @media (max-width: 720px) {
+  .topbar {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 0 10px;
+  }
+  .topbar-mid { min-width: 0; }
+  .search input {
+    height: 30px;
+    padding: 0 10px 0 28px;
+    font-size: 13px;
+  }
+  .search-kbd { display: none; }
+  .segctl > button { padding: 0 6px; gap: 0; }
+  .segctl > button > span { display: none; }
+  .actions { gap: 2px; }
+  .tb-divider { margin: 0 2px; }
+
   .body-grid { grid-template-columns: 1fr; }
   body[data-note] .sidebar { display: none; }
   body:not([data-note]) .main { display: none; }
   .note-head { padding: 24px 24px 0; }
   .note-body { padding: 16px 24px 64px; }
   .editor-input { padding: 16px 24px; }
-  .actions .actions-mobile-hide { display: none; }
+}
+
+/* Phones: drop the brand and the focus-mode controls. Focus mode hides chrome
+   that's already hidden on mobile, so its button is mostly dead weight here. */
+@media (max-width: 480px) {
+  .topbar { grid-template-columns: minmax(0, 1fr) auto; }
+  .brand { display: none; }
+  #focus-toggle,
+  .actions .tb-divider { display: none; }
 }
 
 /* ── Scrollbars ───────────────────────────────────────────────────────── */
