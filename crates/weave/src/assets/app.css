@@ -313,7 +313,7 @@ body:not([data-note]) #mode-segctl { display: none; }
   margin-bottom: 0;
 }
 .note-row .nr-title {
-  font-size: 13.5px;
+  font-size: 14.5px;
   font-weight: 600;
   color: var(--fg);
   flex: 1 1 auto;
@@ -330,7 +330,7 @@ body:not([data-note]) #mode-segctl { display: none; }
 }
 .note-row .nr-preview {
   margin: 4px 0 0;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted-strong);
   overflow: hidden;
   text-overflow: ellipsis;
