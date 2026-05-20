@@ -490,8 +490,8 @@ body:not([data-note]) #mode-segctl { display: none; }
 .md h3 { font-size: 1.15em; margin-top: 1.6em; }
 .md h4 { font-size: 1.0em; margin-top: 1.5em; color: var(--fg-soft); }
 .md h5, .md h6 { font-size: 0.95em; margin-top: 1.4em; color: var(--fg-soft); }
-.md > h1:first-child,
-.md > :first-child > h1:first-child { margin-top: 0; }
+.md > :first-child,
+.md > :first-child > :first-child { margin-top: 0; }
 .md p { margin: 0; }
 .md a {
   color: var(--accent);
