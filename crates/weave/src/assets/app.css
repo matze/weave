@@ -441,6 +441,7 @@ body:not([data-note]) #mode-segctl { display: none; }
 .note-nav-list a {
   display: block;
   padding: 3px 0 3px 10px;
+  margin-left: -12px;  /* hang bar+padding so link text aligns with section title */
   color: var(--muted-strong);
   text-decoration: none;
   border-left: 2px solid transparent;
@@ -476,6 +477,7 @@ body:not([data-note]) #mode-segctl { display: none; }
   color: var(--fg);
   max-width: var(--measure);
   min-width: 0;
+  hanging-punctuation: first last;
 }
 .md > * + * { margin-top: 1em; }
 .md h1, .md h2, .md h3, .md h4, .md h5, .md h6 {
@@ -528,14 +530,17 @@ body:not([data-note]) #mode-segctl { display: none; }
 }
 .md a.md-tag:hover { background: var(--border); color: var(--fg); }
 
-.md ul, .md ol { padding-left: 1.4em; margin: 0; }
+.md ul, .md ol { padding-left: 0; list-style-position: outside; margin: 0; }
+/* Nested lists keep an indent (markers hang into it, not the page gutter). */
+.md li > ul, .md li > ol { padding-left: 1.4em; }
 .md ul li, .md ol li { margin-top: 0.4em; }
 .md ul li::marker, .md ol li::marker { color: var(--muted); }
 .md li > p { margin-top: 0.4em; }
 
 .md blockquote {
   margin: 0;
-  padding: 0.6em 0 0.6em 1.1em;
+  margin-inline: calc(-1.1em - 2px) -1.1em;  /* hang bar+padding left, mirror right */
+  padding: 0.6em 1.1em;
   border-left: 2px solid var(--accent);
   color: var(--fg-soft);
   font-style: italic;
@@ -615,10 +620,11 @@ body:not([data-note]) #mode-segctl { display: none; }
   border-bottom: 2px solid var(--accent-fg);
   transform: rotate(45deg);
 }
-.md li:has(> input[type="checkbox"]) { list-style: none; margin-left: -1.4em; }
+.md li:has(> input[type="checkbox"]) { list-style: none; }
 
 .md table {
-  width: 100%;
+  width: calc(100% + 28px);  /* bleed cell padding into both gutters so text aligns */
+  margin-inline: -14px;
   border-collapse: collapse;
   font-family: var(--font-ui);
   font-size: 14px;
@@ -641,7 +647,7 @@ body:not([data-note]) #mode-segctl { display: none; }
 .md table tbody tr:hover { background: var(--bg-soft); }
 
 .md pre {
-  margin: 1.5em 0;
+  margin: 1.5em -18px;  /* bleed into both gutters so code aligns with body text */
   padding: 14px 18px;
   overflow-x: auto;
   font-family: var(--font-mono);
@@ -651,7 +657,7 @@ body:not([data-note]) #mode-segctl { display: none; }
   background: var(--code-bg);
   border: 1px solid var(--code-border);
   border-radius: var(--radius);
-  max-width: 100%;
+  max-width: none;
 }
 .md pre code {
   font-family: inherit;
