@@ -190,14 +190,6 @@ button { font: inherit; color: inherit; }
 
 #edit-btn { display: none; }
 
-.tb-divider {
-  width: 1px;
-  height: 18px;
-  background: var(--border);
-  margin: 0 6px;
-  flex-shrink: 0;
-}
-
 /* Segmented control (Read / Edit) */
 .segctl {
   display: inline-flex;
@@ -235,8 +227,7 @@ button { font: inherit; color: inherit; }
 /* Hide note-dependent controls when no note is shown.
    Elements are always in the DOM so syncView can reveal them on any entry point. */
 body:not([data-note]) #mode-segctl,
-body:not([data-note]) #edit-btn,
-body:not([data-note]) .actions .tb-divider { display: none; }
+body:not([data-note]) #edit-btn { display: none; }
 
 /* Search */
 .search {
@@ -851,7 +842,6 @@ body:not([data-note]) .actions .tb-divider { display: none; }
   .segctl { display: none; }
   #edit-btn { display: inline-flex; }
   .actions { gap: 2px; }
-  .tb-divider { margin: 0 2px; }
 
   .body-grid { grid-template-columns: 1fr; }
   body[data-note] .sidebar { display: none; }
@@ -866,7 +856,6 @@ body:not([data-note]) .actions .tb-divider { display: none; }
 @media (max-width: 480px) {
   .topbar { grid-template-columns: minmax(0, 1fr) auto; }
   .brand { display: none; }
-  .actions .tb-divider,
   a[href="/logout"] { display: none; }
 }
 

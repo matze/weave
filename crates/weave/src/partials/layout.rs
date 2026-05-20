@@ -58,7 +58,6 @@ pub(crate) fn layout(
                             title="Edit (E)" aria-label="Edit" {
                             (assets::icons::pencil())
                         }
-                        span class="tb-divider" {}
                         @if authenticated {
                             button type="button" class="tb-btn" #clip-toggle
                                 title="Clip URL (C)" aria-label="Clip URL" {
