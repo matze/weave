@@ -13,7 +13,8 @@ pub(crate) async fn note(
         div
             hx-get={ "/f/" (stem) }
             hx-trigger="load"
-            hx-swap="outerHTML"
+            hx-target="#note-content"
+            hx-swap="innerHTML"
             {}
     };
 

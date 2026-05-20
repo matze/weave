@@ -165,10 +165,14 @@ function switchMode(mode) {
     if (!stem) return;
     if (mode === currentMode()) return;
     if (mode === 'read' && currentMode() === 'edit') {
-        // Auto-save: clicking Save PUTs the textarea and the server returns
-        // the read-mode article, which HTMX swaps into #note-content.
-        var save = document.getElementById('editor-save');
-        if (save) { save.click(); return; }
+        // Auto-save: PUT the textarea body; the server returns the read-mode
+        // article, which HTMX swaps into #note-content.
+        var ta = document.getElementById('editor-textarea');
+        htmx.ajax('PUT', '/f/' + encodeURIComponent(stem), {
+            target: '#note-content',
+            values: { body: ta ? ta.value : '' }
+        });
+        return;
     }
     var url = mode === 'edit' ? '/f/' + encodeURIComponent(stem) + '/edit'
                               : '/f/' + encodeURIComponent(stem);
@@ -244,7 +248,6 @@ document.addEventListener('click', function(e) {
     if (e.target.closest('#clip-toggle')) { openClip(); }
     else if (e.target.closest('#clip-cancel')) { closeClip(); }
     else if (e.target.closest('#theme-toggle')) { toggleTheme(); }
-    else if (e.target.closest('#edit-btn')) { switchMode('edit'); }
     else {
         var seg = e.target.closest('.segctl > button');
         if (seg) { switchMode(seg.getAttribute('data-mode')); }

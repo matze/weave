@@ -188,8 +188,6 @@ button { font: inherit; color: inherit; }
 .tb-btn.is-on { background: var(--accent-soft); color: var(--accent); }
 .tb-btn svg { width: 14px; height: 14px; }
 
-#edit-btn { display: none; }
-
 /* Segmented control (Read / Edit) */
 .segctl {
   display: inline-flex;
@@ -226,8 +224,7 @@ button { font: inherit; color: inherit; }
 
 /* Hide note-dependent controls when no note is shown.
    Elements are always in the DOM so syncView can reveal them on any entry point. */
-body:not([data-note]) #mode-segctl,
-body:not([data-note]) #edit-btn { display: none; }
+body:not([data-note]) #mode-segctl { display: none; }
 
 /* Search */
 .search {
@@ -689,16 +686,6 @@ body:not([data-note]) #edit-btn { display: none; }
   word-break: break-word;
 }
 .editor-input::placeholder { color: var(--muted); }
-.editor-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  padding: 12px 24px;
-  border-top: 1px solid var(--border);
-  background: var(--bg);
-  position: sticky;
-  bottom: 0;
-}
 
 /* ── Buttons ──────────────────────────────────────────────────────────── */
 .btn {
@@ -839,8 +826,9 @@ body:not([data-note]) #edit-btn { display: none; }
     font-size: 13px;
   }
   .search-kbd { display: none; }
-  .segctl { display: none; }
-  #edit-btn { display: inline-flex; }
+  /* Collapse the Read/Edit toggle to icons only — no room for labels. */
+  .segctl > button { padding: 0 8px; gap: 0; }
+  .segctl > button > span { display: none; }
   .actions { gap: 2px; }
 
   .body-grid { grid-template-columns: 1fr; }

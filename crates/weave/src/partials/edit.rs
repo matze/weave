@@ -16,20 +16,6 @@ fn edit_form(stem: &str, body: &str) -> Markup {
                     placeholder="Write your note here…" {
                     (body)
                 }
-                footer class="editor-actions" {
-                    button type="button" id="editor-cancel" class="btn btn-ghost"
-                        hx-get={ "/f/" (stem) }
-                        hx-target="#note-content"
-                        hx-push-url="false" {
-                        "Cancel"
-                    }
-                    button type="button" id="editor-save" class="btn btn-primary"
-                        hx-put={ "/f/" (stem) }
-                        hx-include="#editor-textarea"
-                        hx-target="#note-content" {
-                        "Save"
-                    }
-                }
             }
         }
     }
