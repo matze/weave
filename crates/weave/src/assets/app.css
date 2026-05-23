@@ -843,6 +843,8 @@ body:not([data-note]) #mode-segctl { display: none; }
   .note-head { padding: 24px 24px 0; }
   .note-body { padding: 16px 24px 64px; }
   .editor-input { padding: 16px 24px; }
+  /* Tables: drop the gutter-bleed; cell min-content can push past it on narrow viewports. */
+  .md table { width: 100%; margin-inline: 0; }
 }
 
 /* Phones: drop the brand and the focus-mode controls. Focus mode hides chrome
