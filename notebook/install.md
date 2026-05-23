@@ -1,14 +1,9 @@
 # Installation
 
-## Prerequisites
-
-You need a Rust toolchain (1.93+) and the
-[tailwindcss](https://tailwindcss.com/blog/standalone-cli) standalone CLI binary
-in your `PATH`. The build step uses it to compile the stylesheet.
-
 ## Building from source
 
-Clone the repository and build a release binary:
+You need a Rust toolchain (1.93+). Clone the repository and build a release
+binary:
 
 ```bash
 git clone https://github.com/matze/weave.git
