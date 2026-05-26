@@ -215,8 +215,12 @@ button { font: inherit; color: inherit; }
   gap: 5px;
   transition: background var(--transition-fast), color var(--transition-fast);
 }
-.segctl > button:hover { color: var(--fg); }
 .segctl > button.is-on {
+  background: var(--bg-elev);
+  color: var(--fg);
+  box-shadow: var(--shadow-soft);
+}
+.segctl:hover > button:not(.is-on) {
   background: var(--bg-elev);
   color: var(--fg);
   box-shadow: var(--shadow-soft);

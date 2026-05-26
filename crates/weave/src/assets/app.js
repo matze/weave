@@ -248,9 +248,9 @@ document.addEventListener('click', function(e) {
     if (e.target.closest('#clip-toggle')) { openClip(); }
     else if (e.target.closest('#clip-cancel')) { closeClip(); }
     else if (e.target.closest('#theme-toggle')) { toggleTheme(); }
-    else {
-        var seg = e.target.closest('.segctl > button');
-        if (seg) { switchMode(seg.getAttribute('data-mode')); }
+    else if (e.target.closest('#mode-segctl')) {
+        var m = currentMode();
+        if (m) switchMode(m === 'edit' ? 'read' : 'edit');
     }
 });
 
