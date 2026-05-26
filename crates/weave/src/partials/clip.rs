@@ -1,8 +1,7 @@
-use std::io::Cursor;
-
 use axum::Form;
 use axum::extract::State;
 use axum::http::StatusCode;
+use dom_smoothie::Readability;
 use serde::Deserialize;
 use url::Url;
 
@@ -48,16 +47,16 @@ async fn clip_url(url: &str, notebook: &Notebook) -> anyhow::Result<()> {
         .send()
         .await?;
 
-    let bytes = response.bytes().await?;
+    let html = response.text().await?;
     let parsed_url = Url::parse(url)?;
-    let mut cursor = Cursor::new(&bytes);
-    let product = readability::extractor::extract(&mut cursor, &parsed_url)?;
+    let mut readability = Readability::new(html, Some(url), None)?;
+    let article = readability.parse()?;
 
-    let markdown = htmd::convert(&product.content)?;
-    let title = if product.title.is_empty() {
+    let markdown = htmd::convert(&article.content)?;
+    let title = if article.title.is_empty() {
         parsed_url.host_str().unwrap_or("clipping").to_owned()
     } else {
-        product.title
+        article.title
     };
 
     let content = format!("# {title}\n\n{markdown}\n\n---\n\nReference: {url}");
