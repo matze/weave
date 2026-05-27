@@ -552,11 +552,12 @@ body:not([data-note]) #mode-segctl { display: none; }
 .md blockquote > * + * { margin-top: 0.6em; }
 
 .md-admonition {
-  margin: 0;
+  margin: 1.5em 0;
+  margin-inline: calc(-1em - 3px) -1em;
   padding: 0.8em 1em;
   border-left: 3px solid var(--accent);
   background: var(--bg-soft);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  border-radius: var(--radius-sm);
   font-style: normal;
   color: var(--fg);
 }
