@@ -32,6 +32,7 @@ should be able to see this page under
 
 - [Installation](installation)
 - [Usage](usage)
+- [Markdown](markdown)
 
 
 ## License

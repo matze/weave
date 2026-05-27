@@ -72,21 +72,4 @@ so they resolve correctly regardless of the page URL. Nested paths like
 `WEAVE_ATTACHMENTS=assets/img` work as well.
 
 
-## Special tags
-
-Zk uses [tags][] to group and find notes of a related topic. Weave adds special
-behaviour to three of them:
-
-- `#public` makes a note accessible without signing in, useful for sharing
-  notes with others.
-- `#pin` moves a note to the top of the sidebar for quick access.
-- `#archived` pushes a note to the bottom of the sidebar and greys it out to
-  reduce clutter.
-
-Tags can be placed in the YAML frontmatter (`tags: [public, pin]`) or inline
-in the note body.
-
-
-[tags]: https://zk-org.github.io/zk/notes/tags.html
-
 #public
