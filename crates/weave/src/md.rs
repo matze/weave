@@ -192,9 +192,12 @@ fn build_tree(parser: Parser) -> MdNode {
                     .push(MdNode::Element(tag, children));
             }
             Event::Text(t) => {
-                let suppress_splitter = stack
-                    .iter()
-                    .any(|(tag, _)| matches!(tag, MdTag::CodeBlock(_) | MdTag::WikiLink(_)));
+                let suppress_splitter = stack.iter().any(|(tag, _)| {
+                    matches!(
+                        tag,
+                        MdTag::CodeBlock(_) | MdTag::WikiLink(_) | MdTag::ExternalLink(_)
+                    )
+                });
                 let node = if suppress_splitter {
                     MdNode::Plain(t.to_string())
                 } else {
@@ -573,6 +576,14 @@ mod tests {
         let html = markdown_to_html("[site](https://example.com)").into_string();
         assert!(html.contains(r#"href="https://example.com""#), "{html}");
         assert!(!html.contains("hx-get"), "{html}");
+    }
+
+    #[test]
+    fn test_external_link_with_url_label_has_single_icon() {
+        let html =
+            markdown_to_html("[http://localhost:8000](http://localhost:8000)").into_string();
+        assert_eq!(html.matches("md-ext-icon").count(), 1, "{html}");
+        assert_eq!(html.matches("<a ").count(), 1, "{html}");
     }
 
     #[test]
