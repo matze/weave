@@ -64,9 +64,14 @@ impl Notebook {
         notes
     }
 
-    /// Return notes for given tag, sorted by last modified (most recent first).
-    pub fn search_tag(&self, tag: &str) -> Vec<&Note> {
-        let mut notes: Vec<&Note> = self.inner.all_notes(Some(tag)).collect();
+    /// Return notes for given tag, optionally also requiring `with_tag`,
+    /// sorted by last modified (most recent first).
+    pub fn search_tag(&self, tag: &str, with_tag: Option<&str>) -> Vec<&Note> {
+        let mut notes: Vec<&Note> = self
+            .inner
+            .all_notes(Some(tag))
+            .filter(|n| with_tag.is_none_or(|t| n.has(t)))
+            .collect();
         notes.sort_by_key(|note| std::cmp::Reverse(note.modified()));
         notes
     }

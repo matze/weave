@@ -26,11 +26,7 @@ pub(crate) async fn search(
         // Return all authorized notes when query is empty
         notebook.all_notes(tag_filter)
     } else if let Some(tag) = query.strip_prefix('#') {
-        if !authenticated {
-            notebook.search_tag("public")
-        } else {
-            notebook.search_tag(tag)
-        }
+        notebook.search_tag(tag, tag_filter)
     } else {
         notebook.search_titles(query, tag_filter)
     };
