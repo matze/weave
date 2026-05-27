@@ -2,8 +2,8 @@
 
 ## Starting the server
 
-See [installation](install) for build instructions and environment variables. Once
-built, start the server with:
+See [installation](installation) for build instructions and environment
+variables. Once built, start the server with:
 
 ```bash
 ZK_NOTEBOOK_DIR="/path/to/notebook" WEAVE_PASSWORD="secret" cargo run --release

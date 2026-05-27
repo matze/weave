@@ -30,8 +30,8 @@ should be able to see this page under
 
 ## Further topics
 
-- [Installation](install)
-- [Usage](using)
+- [Installation](installation)
+- [Usage](usage)
 
 
 ## License
