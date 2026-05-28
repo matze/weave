@@ -9,7 +9,7 @@ pub(crate) fn head() -> Markup {
             meta name="htmx-config" content=r#"{"refreshOnHistoryMiss":true}"#;
             link rel="preconnect" href="https://fonts.googleapis.com";
             link rel="preconnect" href="https://fonts.gstatic.com" crossorigin;
-            link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap";
+            link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&display=swap";
             link rel="stylesheet" type="text/css" href="/app.css";
             link rel="stylesheet" type="text/css" href="/highlight.css";
             link rel="shortcut icon" type="image/svg+xml" href="/favicon.svg";
