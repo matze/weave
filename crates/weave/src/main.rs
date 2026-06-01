@@ -272,6 +272,7 @@ async fn main() -> Result<()> {
     let mut app = Router::new()
         .route("/", get(pages::index::index))
         .route("/note/{stem}", get(pages::note::note))
+        .route("/raw/{stem}", get(pages::raw::raw))
         .route("/login", get(pages::login::login).post(do_login))
         .route("/logout", get(logout))
         .route("/clip", post(partials::clip::clip))

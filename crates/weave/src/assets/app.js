@@ -179,6 +179,13 @@ function switchMode(mode) {
     htmx.ajax('GET', url, { target: '#note-content' });
 }
 
+// ── raw markdown ──────────────────────────────────────────────────────────
+
+function openRaw() {
+    var stem = stemFromUrl();
+    if (stem) location.href = '/raw/' + encodeURIComponent(stem);
+}
+
 // ── keyboard ──────────────────────────────────────────────────────────────
 
 document.addEventListener('keydown', function(e) {
@@ -216,6 +223,7 @@ document.addEventListener('keydown', function(e) {
         case 'e': e.preventDefault(); switchMode('edit'); return;
         case 'v': e.preventDefault(); switchMode('read'); return;
         case 'f': e.preventDefault(); toggleFocus(); return;
+        case 'r': e.preventDefault(); openRaw(); return;
         case 'd': e.preventDefault(); toggleTheme(); return;
         case 'c': {
             var clipBtn = document.getElementById('clip-toggle');
