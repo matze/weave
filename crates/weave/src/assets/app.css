@@ -198,6 +198,9 @@ button { font: inherit; color: inherit; }
   border-radius: 8px;
   border: 1px solid var(--border);
 }
+.segctl:not(:last-child) {
+  margin-inline-end: 8px;
+}
 .segctl > button {
   appearance: none;
   border: 0;
