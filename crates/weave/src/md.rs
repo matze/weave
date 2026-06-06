@@ -448,9 +448,7 @@ pub fn markdown_to_html(source: &str) -> Markup {
 
     let tree = build_tree(parser);
 
-    html! {
-        div { (render_node(&tree)) }
-    }
+    render_node(&tree)
 }
 
 #[derive(Debug, Clone)]
@@ -484,7 +482,7 @@ pub fn markdown_to_html_with_headings(source: &str) -> (Markup, Vec<Heading>) {
     );
     let tree = build_tree(parser);
     let headings = collect_headings_from_tree(&tree);
-    let html = html! { div { (render_node(&tree)) } };
+    let html = render_node(&tree);
     (html, headings)
 }
 
