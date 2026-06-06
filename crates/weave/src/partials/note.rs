@@ -50,9 +50,10 @@ pub(crate) async fn note(
     } else {
         "note-body no-rail"
     };
+    let note_class = if has_rail { "note" } else { "note note--no-rail" };
 
     html! {
-        article class="note" data-stem=(stem) data-mode="read" {
+        article class=(note_class) data-stem=(stem) data-mode="read" {
             header class="note-head" { h1 { (title) } }
             div class=(body_class) {
                 div class="md" { (rendered) }

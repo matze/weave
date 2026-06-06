@@ -367,6 +367,7 @@ body:not([data-note]) #mode-segctl { display: none; }
   grid-template-columns: minmax(0, 1fr);
   max-width: calc(var(--measure) + 80px);
 }
+.note--no-rail .note-head { max-width: calc(var(--measure) + 80px); }
 .note-head {
   padding: 44px 56px 0;
   max-width: calc(var(--measure) + 240px + 80px);
