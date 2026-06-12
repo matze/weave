@@ -9,7 +9,7 @@ publish = false
 anyhow = "1.0.95"
 axum = { version = "0.8.1", features = ["macros"] }
 axum-extra = { version = "0.12.5", features = ["cookie-signed"] }
-dom_smoothie = "0.17"
+dom_smoothie = "0.18"
 futures-concurrency = "7.6.3"
 htmd = "0.5"
 jiff = { version = "0.2", features = ["serde"] }
