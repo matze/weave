@@ -2,7 +2,7 @@
 
 use std::path::{Path, PathBuf};
 
-use pulldown_cmark::{Event, Parser};
+use pulldown_cmark::{Event, Parser, TagEnd};
 
 pub use zk_rs::Note;
 
@@ -145,6 +145,16 @@ impl NoteExt for Note {
                         Some(Some(t))
                     }
                     Event::SoftBreak | Event::HardBreak => {
+                        *len += 1;
+                        Some(Some(" ".into()))
+                    }
+                    Event::End(
+                        TagEnd::Paragraph
+                        | TagEnd::Heading(_)
+                        | TagEnd::Item
+                        | TagEnd::CodeBlock
+                        | TagEnd::BlockQuote(_),
+                    ) => {
                         *len += 1;
                         Some(Some(" ".into()))
                     }
