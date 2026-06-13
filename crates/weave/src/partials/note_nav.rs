@@ -95,7 +95,7 @@ fn toc_item(h: &Heading, min_level: u8) -> Markup {
     html! {
         li data-depth=(depth) {
             a href={ "#" (h.anchor) }
-                onclick="var el=document.getElementById(this.getAttribute('href').slice(1));if(el){event.preventDefault();el.scrollIntoView({behavior:'smooth',block:'start'})}"
+                onclick="gotoHeading(event, this.getAttribute('href').slice(1))"
             { (h.text) }
         }
     }

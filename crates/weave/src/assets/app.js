@@ -61,6 +61,31 @@ function showNote(e) {
 
 function showList() { delete document.body.dataset.note; }
 
+// ── heading anchors ─────────────────────────────────────────────────────────
+
+// Put `anchor` into the URL fragment so it can be copied/shared. Use
+// replaceState (not location.hash) to avoid a history entry and the popstate
+// note reload it would trigger.
+function setHash(anchor) {
+    try { history.replaceState(null, '', '#' + anchor); } catch (e) {}
+}
+
+// Smooth-scroll to a heading and update the URL fragment (TOC clicks).
+function gotoHeading(e, anchor) {
+    var el = document.getElementById(anchor);
+    if (!el) return;
+    if (e) e.preventDefault();
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setHash(anchor);
+}
+
+// Scroll to the heading named by the current URL fragment, if any.
+function scrollToHash() {
+    if (location.hash.length <= 1) return;
+    var el = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    if (el) el.scrollIntoView({ block: 'start' });
+}
+
 function goBack() {
     if (history.length > 1) history.back();
     else location.href = '/';
@@ -254,6 +279,9 @@ document.addEventListener('keydown', function(e) {
 // ── click delegation ──────────────────────────────────────────────────────
 
 document.addEventListener('click', function(e) {
+    var heading = e.target.closest('.md h1, .md h2, .md h3, .md h4, .md h5, .md h6');
+    if (heading && heading.id && !e.target.closest('a')) { gotoHeading(e, heading.id); return; }
+
     if (e.target.closest('#clip-toggle')) { openClip(); }
     else if (e.target.closest('#clip-cancel')) { closeClip(); }
     else if (e.target.closest('#theme-toggle')) { toggleTheme(); }
@@ -296,7 +324,10 @@ document.addEventListener('htmx:afterRequest', function(e) {
 });
 
 document.addEventListener('htmx:afterSettle', function(e) {
-    if (e.detail.target && e.detail.target.id === 'note-content') syncView(false);
+    if (e.detail.target && e.detail.target.id === 'note-content') {
+        syncView(false);
+        scrollToHash();
+    }
 });
 
 function showNoteError(message) {

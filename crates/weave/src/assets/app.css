@@ -495,6 +495,16 @@ body:not([data-note]) #mode-segctl { display: none; }
   line-height: 1.2;
   letter-spacing: -0.01em;
 }
+.md :where(h1, h2, h3, h4, h5, h6) { cursor: pointer; }
+.md :where(h1, h2, h3, h4, h5, h6)::after {
+  content: "#";
+  margin-left: 0.35em;
+  color: var(--accent);
+  font-weight: 400;
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+.md :where(h1, h2, h3, h4, h5, h6):hover::after { opacity: 0.5; }
 .md h1 { font-size: 1.7em; margin-top: 1.8em; }
 .md h2 { font-size: 1.25em; margin-top: 1.8em; padding-bottom: 0.25em; border-bottom: 1px solid var(--border); }
 .md h3 { font-size: 1.15em; margin-top: 1.6em; }
