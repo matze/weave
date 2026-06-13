@@ -109,6 +109,39 @@ plain monospace text
 ```
 
 
+## Diagrams
+
+Fenced blocks tagged `mermaid` are rendered to SVG on the server, so diagrams
+work without any client-side JavaScript. The example below sketches what happens
+when you open a note in weave:
+
+```mermaid
+flowchart TD
+    A[Browser] -->|GET /f/note| B[Axum router]
+    B --> C[Load note from zk notebook]
+    C --> D{Public or signed in?}
+    D -->|no| E[Access denied]
+    D -->|yes| F[markdown_to_html]
+    F --> G[Render mermaid + highlight code]
+    G --> H[HTML fragment via HTMX]
+    H --> A
+```
+
+Sequence diagrams work too, here showing a save round-trip from the editor:
+
+```mermaid
+sequenceDiagram
+    participant E as Editor
+    participant S as Server
+    participant W as File watcher
+    E->>S: PUT /f/note (edited body)
+    S->>S: Write note to disk
+    S-->>E: Re-rendered note fragment
+    W->>S: notify: file changed
+    S-->>E: SSE reload event
+```
+
+
 ## Tables
 
 | Variable           | Description                            | Default    |

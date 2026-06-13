@@ -15,6 +15,7 @@ htmd = "0.5"
 jiff = { version = "0.2", features = ["serde"] }
 jsonwebtoken = { version = "10.2.0", features = ["rust_crypto"] }
 maud = { git = "https://github.com/lambda-fairy/maud", features = ["axum"] }
+merman = { version = "=0.8.0-alpha.1", features = ["render"] }
 notify = "8.0.0"
 pulldown-cmark = "0.13"
 rand = "0.10.0"
@@ -22,6 +23,7 @@ regex = "1.11.1"
 reqwest = { version = "0.13.2", default-features = false, features = ["rustls"] }
 ring = "0.17.14"
 serde = { version = "1.0.217", features = ["serde_derive"] }
+serde_json = "1.0.150"
 syntect = { version = "5", default-features = false, features = ["parsing", "html", "regex-fancy", "plist-load"] }
 thiserror = "2.0.10"
 tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread", "sync"] }

@@ -1,8 +1,12 @@
 //! Render Markdown as HTML.
 
-use std::sync::LazyLock;
+use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
+use std::sync::{LazyLock, Mutex};
 
 use maud::{Markup, PreEscaped, html};
+use merman::render::HeadlessRenderer;
+use merman::MermaidConfig;
 use pulldown_cmark::{BlockQuoteKind, CodeBlockKind, Event, Options, Parser, Tag as CmarkTag};
 use syntect::html::{ClassStyle, ClassedHTMLGenerator};
 use syntect::parsing::SyntaxSet;
@@ -335,6 +339,13 @@ fn render_node(node: &MdNode) -> Markup {
             }
             MdTag::CodeBlock(lang) => {
                 let code = collect_text(children);
+
+                if lang.as_deref() == Some("mermaid")
+                    && let Some(diagram) = render_mermaid(&code)
+                {
+                    return diagram;
+                }
+
                 match highlight_code(&code, lang.as_deref()) {
                     Some(highlighted) => html! {
                         pre { code { (PreEscaped(highlighted)) } }
@@ -435,6 +446,221 @@ fn highlight_code(source: &str, lang: Option<&str>) -> Option<String> {
     }
 
     Some(generator.finalize())
+}
+
+/// Cache of rendered Mermaid diagrams, keyed by a hash of the diagram source.
+/// Each entry holds the `(light, dark)` SVG pair. Avoids re-rendering on every
+/// note view and on every keystroke in the live editor preview.
+static MERMAID_CACHE: LazyLock<Mutex<HashMap<u64, (String, String)>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
+/// Render a `mermaid` fenced block into a light and a dark SVG variant, toggled
+/// by CSS (`.mermaid-light` / `.mermaid-dark`). Returns `None` if either variant
+/// fails to render, so the caller can fall back to showing the source.
+fn render_mermaid(source: &str) -> Option<Markup> {
+    let key = {
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        source.hash(&mut hasher);
+        hasher.finish()
+    };
+
+    let (light, dark) = {
+        if let Some(cached) = MERMAID_CACHE.lock().unwrap().get(&key).cloned() {
+            cached
+        } else {
+            let light = render_mermaid_svg(source, MermaidTheme::Light, key)?;
+            let dark = render_mermaid_svg(source, MermaidTheme::Dark, key)?;
+            MERMAID_CACHE
+                .lock()
+                .unwrap()
+                .insert(key, (light.clone(), dark.clone()));
+            (light, dark)
+        }
+    };
+
+    Some(html! {
+        div class="mermaid" {
+            div class="mermaid-light" { (PreEscaped(light)) }
+            div class="mermaid-dark" { (PreEscaped(dark)) }
+        }
+    })
+}
+
+/// Subset of weave's `app.css` design tokens needed to theme diagrams. `base` is
+/// the Mermaid theme the variables layer on top of: `"base"` (light) gives a
+/// clean light canvas, `"dark"` already darkens diagram families that don't read
+/// every theme variable (sequence/er/gantt/...), so we only nudge them toward the
+/// weave palette.
+struct MermaidPalette {
+    base: &'static str,
+    bg: &'static str,
+    surface: &'static str,
+    surface_alt: &'static str,
+    border: &'static str,
+    fg: &'static str,
+    muted: &'static str,
+}
+
+#[derive(Clone, Copy)]
+enum MermaidTheme {
+    Light,
+    Dark,
+}
+
+impl MermaidTheme {
+    fn id_suffix(self) -> &'static str {
+        match self {
+            MermaidTheme::Light => "light",
+            MermaidTheme::Dark => "dark",
+        }
+    }
+
+    fn palette(self) -> MermaidPalette {
+        match self {
+            MermaidTheme::Light => MermaidPalette {
+                base: "base",
+                bg: "#fefdfc",
+                surface: "#f6f5f2",
+                surface_alt: "#efedea",
+                border: "#cccac6",
+                fg: "#1d1a17",
+                muted: "#7d7a75",
+            },
+            MermaidTheme::Dark => MermaidPalette {
+                base: "dark",
+                bg: "#0f0d0a",
+                surface: "#1a1815",
+                surface_alt: "#151311",
+                border: "#302d2b",
+                fg: "#eae7e4",
+                muted: "#82807c",
+            },
+        }
+    }
+
+    /// Mermaid config mapping weave's design tokens onto `themeVariables` across
+    /// diagram families (flowchart, sequence, class, state, er, ...), so diagrams
+    /// match the surrounding UI in both modes. `fontFamily`/`fontSize` match the
+    /// `.md` body (IBM Plex Sans, 15px) so diagram text is optically the same size
+    /// as the prose; merman re-measures boxes for the family, so labels still fit.
+    /// Box padding/sizing is trimmed from merman's roomy defaults.
+    fn config(self) -> MermaidConfig {
+        let p = self.palette();
+
+        let mut variables = serde_json::Map::new();
+        let mut set = |key: &str, value: &str| {
+            variables.insert(key.to_owned(), serde_json::Value::String(value.to_owned()));
+        };
+        // Shared surfaces / text / lines.
+        set("background", p.bg);
+        set("primaryColor", p.surface);
+        set("mainBkg", p.surface);
+        set("secondBkg", p.surface_alt);
+        set("secondaryColor", p.surface_alt);
+        set("tertiaryColor", p.surface_alt);
+        set("primaryBorderColor", p.border);
+        set("nodeBorder", p.border);
+        set("secondaryBorderColor", p.border);
+        set("tertiaryBorderColor", p.border);
+        set("clusterBkg", p.surface_alt);
+        set("clusterBorder", p.border);
+        set("primaryTextColor", p.fg);
+        set("nodeTextColor", p.fg);
+        set("textColor", p.fg);
+        set("titleColor", p.fg);
+        set("lineColor", p.muted);
+        set("edgeLabelBackground", p.surface);
+        // Sequence diagram specifics.
+        set("actorBkg", p.surface);
+        set("actorBorder", p.border);
+        set("actorTextColor", p.fg);
+        set("actorLineColor", p.muted);
+        set("signalColor", p.muted);
+        set("signalTextColor", p.fg);
+        set("labelBoxBkgColor", p.surface_alt);
+        set("labelBoxBorderColor", p.border);
+        set("labelTextColor", p.fg);
+        set("loopTextColor", p.fg);
+        set("noteBkgColor", p.surface_alt);
+        set("noteTextColor", p.fg);
+        set("noteBorderColor", p.border);
+        set("activationBkgColor", p.border);
+        set("activationBorderColor", p.muted);
+        set("sequenceNumberColor", p.bg);
+        // ER diagram attribute rows.
+        set("attributeBackgroundColorOdd", p.surface);
+        set("attributeBackgroundColorEven", p.surface_alt);
+        // Typography matched to the note body.
+        set("fontFamily", "\"IBM Plex Sans\", system-ui, sans-serif");
+        set("fontSize", "15px");
+
+        MermaidConfig::from_value(serde_json::json!({
+            "theme": p.base,
+            // merman's defaults are roomy; trim node padding and the fixed actor
+            // box size (width is a minimum and still grows to fit long labels).
+            "flowchart": { "padding": 10 },
+            "sequence": { "width": 90, "height": 40, "boxMargin": 8 },
+            "themeVariables": serde_json::Value::Object(variables),
+        }))
+    }
+}
+
+/// Render a single Mermaid diagram to SVG for one theme variant. The diagram id
+/// is baked into the SVG element ids and must be unique per diagram on a page to
+/// avoid marker/clip-path collisions.
+fn render_mermaid_svg(source: &str, theme: MermaidTheme, key: u64) -> Option<String> {
+    let diagram_id = format!("mermaid-{key:x}-{}", theme.id_suffix());
+
+    let svg = HeadlessRenderer::new()
+        .with_diagram_id(&diagram_id)
+        .render_svg_with_site_config_sync(source, theme.config())
+        .ok()
+        .flatten()?;
+
+    Some(harmonize_colors(fit_svg(&svg), theme))
+}
+
+/// Replace the few light defaults merman hardcodes regardless of `themeVariables`
+/// (sequence actor boxes `#eaeaea`/`#666`, and entity/node fills that stay light
+/// in dark mode) with the variant palette, so no diagram family shows a glaring
+/// light box against a dark note.
+fn harmonize_colors(svg: String, theme: MermaidTheme) -> String {
+    let p = theme.palette();
+
+    let mut svg = svg
+        .replace("fill=\"#eaeaea\"", &format!("fill=\"{}\"", p.surface))
+        .replace("fill:#eaeaea", &format!("fill:{}", p.surface))
+        .replace("stroke=\"#666\"", &format!("stroke=\"{}\"", p.border));
+
+    if matches!(theme, MermaidTheme::Dark) {
+        svg = svg
+            .replace("fill=\"white\"", &format!("fill=\"{}\"", p.surface))
+            .replace("fill=\"#ECECFF\"", &format!("fill=\"{}\"", p.surface));
+    }
+
+    svg
+}
+
+/// Rewrite the root `<svg>` so it renders at its native pixel size instead of
+/// scaling to the container width. Mermaid emits `width="100%"` plus a
+/// `max-width` cap, which downscales wide diagrams and shrinks their text below
+/// the surrounding prose. Pinning the width keeps text at the configured size;
+/// the `.mermaid` container scrolls horizontally when a diagram is too wide.
+/// Also drops the hardcoded white background so the diagram inherits the note
+/// surface. Only the opening tag is touched, so `foreignObject` `max-width`
+/// label caps are left intact.
+fn fit_svg(svg: &str) -> String {
+    let Some(end) = svg.find('>') else {
+        return svg.to_owned();
+    };
+    let (open_tag, rest) = svg.split_at(end);
+
+    let open_tag = open_tag
+        .replace(" width=\"100%\"", "")
+        .replace("max-width:", "width:")
+        .replace("background-color: white", "background-color: transparent");
+
+    format!("{open_tag}{rest}")
 }
 
 pub fn markdown_to_html(source: &str) -> Markup {
@@ -669,5 +895,45 @@ mod tests {
         let src = "Just a paragraph.";
         let (_, headings) = markdown_to_html_with_headings(src);
         assert!(headings.is_empty());
+    }
+
+    #[test]
+    fn test_mermaid_renders_light_and_dark_svg() {
+        let src = "```mermaid\nflowchart TD\n  A[Start] --> B[Done]\n```";
+        let html = markdown_to_html(src).into_string();
+        assert!(html.contains(r#"class="mermaid""#), "{html}");
+        assert!(html.contains(r#"class="mermaid-light""#), "{html}");
+        assert!(html.contains(r#"class="mermaid-dark""#), "{html}");
+        assert_eq!(html.matches("<svg").count(), 2, "{html}");
+        assert!(!html.contains("<pre>"), "{html}");
+    }
+
+    #[test]
+    fn test_mermaid_invalid_falls_back_to_code_block() {
+        let src = "```mermaid\nnot a real diagram @#$%\n```";
+        let html = markdown_to_html(src).into_string();
+        assert!(!html.contains("<svg"), "{html}");
+        assert!(html.contains("<pre>"), "{html}");
+    }
+
+    /// merman hardcodes a few light defaults in diagram families that don't read
+    /// every theme variable (sequence actors, er entities, ...). Guard that the
+    /// dark variant has none of them, so nothing glares against a dark note.
+    #[test]
+    fn test_mermaid_dark_variant_has_no_light_fills() {
+        let diagrams = [
+            "```mermaid\nsequenceDiagram\n participant A as Editor\n participant W as File watcher\n A->>W: PUT\n Note over A,W: hi\n W-->>A: ok\n```",
+            "```mermaid\nerDiagram\n NOTE ||--o{ TAG : has\n NOTE{string title PK}\n```",
+            "```mermaid\nstateDiagram-v2\n [*]-->Read\n Read-->Edit\n Edit-->[*]\n```",
+        ];
+        for src in diagrams {
+            let html = markdown_to_html(src).into_string();
+            // Markup is light variant then dark variant; the dark SVG follows the
+            // `mermaid-dark` class.
+            let (_, dark) = html.split_once("mermaid-dark").expect("dark variant present");
+            for bad in ["#eaeaea", "fill=\"white\"", "#ECECFF", "#fff5ad"] {
+                assert!(!dark.contains(bad), "dark variant still contains {bad}: {dark}");
+            }
+        }
     }
 }

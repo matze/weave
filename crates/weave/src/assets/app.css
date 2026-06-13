@@ -686,6 +686,25 @@ body:not([data-note]) #mode-segctl { display: none; }
   color: inherit;
 }
 
+/* ── Mermaid diagrams ─────────────────────────────────────────────────── */
+/* merman renders one SVG per theme; show the variant matching the active
+   theme. Mirrors the light/dark selectors used for syntax highlighting. */
+/* Diagrams render at native size (so text matches the prose); scroll when a
+   diagram is wider than the column rather than scaling text down. */
+.md .mermaid { margin: 1.5em 0; overflow-x: auto; }
+.md .mermaid svg { display: block; margin: 0 auto; height: auto; }
+
+.md .mermaid-dark { display: none; }
+.md .mermaid-light { display: flex; }
+
+[data-theme="dark"] .md .mermaid-light { display: none; }
+[data-theme="dark"] .md .mermaid-dark { display: flex; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .md .mermaid-light { display: none; }
+  :root:not([data-theme="light"]) .md .mermaid-dark { display: flex; }
+}
+
 /* ── Editor ───────────────────────────────────────────────────────────── */
 .editor {
   display: flex;
