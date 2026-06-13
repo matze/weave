@@ -191,6 +191,7 @@ function openRaw() {
 document.addEventListener('keydown', function(e) {
     var t = document.activeElement;
     var inInput = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+    var mod = e.ctrlKey || e.metaKey || e.altKey;
 
     if (e.key === 'Escape') {
         if (clipOpen()) { closeClip(); return; }
@@ -211,13 +212,13 @@ document.addEventListener('keydown', function(e) {
         return;
     }
 
-    if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === '/' && !inInput)) {
+    if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === '/' && !inInput && !mod)) {
         e.preventDefault();
         focusSearch();
         return;
     }
 
-    if (inInput) return;
+    if (inInput || mod) return;
 
     switch (e.key) {
         case 'e': e.preventDefault(); switchMode('edit'); return;
