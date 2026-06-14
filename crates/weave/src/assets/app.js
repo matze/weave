@@ -77,13 +77,86 @@ function gotoHeading(e, anchor) {
     if (e) e.preventDefault();
     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setHash(anchor);
+    setActiveToc(anchor);
 }
 
 // Scroll to the heading named by the current URL fragment, if any.
 function scrollToHash() {
     if (location.hash.length <= 1) return;
-    var el = document.getElementById(decodeURIComponent(location.hash.slice(1)));
-    if (el) el.scrollIntoView({ block: 'start' });
+    var anchor = decodeURIComponent(location.hash.slice(1));
+    var el = document.getElementById(anchor);
+    if (el) {
+        el.scrollIntoView({ block: 'start' });
+        setActiveToc(anchor);
+    }
+}
+
+// ── TOC scroll-spy ──────────────────────────────────────────────────────────
+
+var tocSpyEl = null;
+var tocSpyFn = null;
+
+function tocLinks() {
+    return Array.from(document.querySelectorAll('.note-nav-toc a'));
+}
+
+// Highlight the TOC entry whose target heading matches `anchor`.
+function setActiveToc(anchor) {
+    tocLinks().forEach(function(a) {
+        a.classList.toggle('is-active', a.getAttribute('href') === '#' + anchor);
+    });
+}
+
+// Highlight the TOC entry for the heading currently scrolled to the top of the
+// viewport (the selected section), updating as the reader scrolls. The active
+// heading is the last one whose scroll target has been reached. Targets are
+// clamped to the maximum scroll offset so the trailing sections — which can
+// never reach the top edge — still resolve to their own entries instead of
+// sticking on the last heading that can.
+function initTocSpy() {
+    if (tocSpyEl) {
+        tocSpyEl.removeEventListener('scroll', tocSpyFn);
+        tocSpyEl = null;
+        tocSpyFn = null;
+    }
+
+    var headings = tocLinks()
+        .map(function(a) { return document.getElementById(decodeURIComponent(a.getAttribute('href').slice(1))); })
+        .filter(Boolean);
+
+    var scroller = document.querySelector('.main');
+
+    if (!headings.length || !scroller) return;
+
+    var ticking = false;
+
+    function update() {
+        ticking = false;
+        var sTop = scroller.getBoundingClientRect().top;
+        var max = scroller.scrollHeight - scroller.clientHeight;
+        var pos = scroller.scrollTop + 4;
+        var current = headings[0];
+
+        for (var i = 0; i < headings.length; i++) {
+            var target = Math.min(scroller.scrollTop + headings[i].getBoundingClientRect().top - sTop, max);
+
+            if (target > pos) break;
+
+            current = headings[i];
+        }
+
+        setActiveToc(current.id);
+    }
+
+    tocSpyFn = function() {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(update);
+    };
+
+    tocSpyEl = scroller;
+    scroller.addEventListener('scroll', tocSpyFn, { passive: true });
+    update();
 }
 
 function goBack() {
@@ -299,6 +372,7 @@ document.addEventListener('DOMContentLoaded', function() {
     try { persisted = localStorage.getItem('focus'); } catch (e) {}
     if (persisted) enterFocus();
     syncView(true);
+    initTocSpy();
 });
 
 // Follow OS preference live, unless user has picked manually
@@ -326,6 +400,7 @@ document.addEventListener('htmx:afterRequest', function(e) {
 document.addEventListener('htmx:afterSettle', function(e) {
     if (e.detail.target && e.detail.target.id === 'note-content') {
         syncView(false);
+        initTocSpy();
         scrollToHash();
     }
 });

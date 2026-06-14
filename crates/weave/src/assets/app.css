@@ -457,6 +457,10 @@ body:not([data-note]) #mode-segctl { display: none; }
   line-height: 1.4;
 }
 .note-nav-list a:hover { color: var(--fg); border-left-color: var(--border-strong); }
+.note-nav-toc a.is-active {
+  color: var(--fg);
+  border-left-color: var(--border-strong);
+}
 .note-nav-toc li[data-depth="1"] a { padding-left: 22px; font-size: 12px; }
 .note-nav-toc li[data-depth="2"] a { padding-left: 34px; font-size: 11.5px; }
 .note-nav-toc li[data-depth="3"] a,
