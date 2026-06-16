@@ -303,7 +303,13 @@ async fn main() -> Result<()> {
             .layer(TraceLayer::new_for_http()),
     );
 
-    let addr = SocketAddr::new(Ipv4Addr::LOCALHOST.into(), port);
+
+    let host: Ipv4Addr = match std::env::var("WEAVE_HOST") {
+        Ok(host) => host.parse().unwrap(),
+        _ => Ipv4Addr::LOCALHOST.into()
+    };
+
+    let addr = SocketAddr::new(host.into(), port);
     let listener = tokio::net::TcpListener::bind(addr).await?;
     tracing::info!("serving on {addr:?}");
     let _ = (watch(notebook, events_tx), axum::serve(listener, app))

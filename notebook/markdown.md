@@ -144,11 +144,12 @@ sequenceDiagram
 
 ## Tables
 
-| Variable           | Description                            | Default    |
-|--------------------|----------------------------------------|------------|
-| `ZK_NOTEBOOK_DIR`  | Path to the notebook directory         | (required) |
-| `WEAVE_PASSWORD`   | Password for signing in                | (empty)    |
-| `WEAVE_PORT`       | Port the server listens on             | `8000`     |
+| Variable             | Description                              | Default      |
+| -------------------- | ---------------------------------------- | ------------ |
+| `ZK_NOTEBOOK_DIR`    | Path to the notebook directory           | (required)   |
+| `WEAVE_PASSWORD`     | Password for signing in                  | (empty)      |
+| `WEAVE_PORT`         | Port the server listens on               | `8000`       |
+| `WEAVE_HOST`         | IP address the server listens on         | `127.0.0.1`  |
 
 
 ## Links
