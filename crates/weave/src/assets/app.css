@@ -806,6 +806,49 @@ body:not([data-note]) #mode-segctl { display: none; }
   outline: none;
 }
 .clip-drawer input:focus { border-color: var(--accent); }
+.clip-drawer .btn { height: 38px; }
+.clip-drawer .btn[disabled] { opacity: 0.55; cursor: default; pointer-events: none; }
+
+.clip-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 20px;
+  margin-top: 10px;
+}
+
+/* htmx adds `htmx-request` to the indicator element while a clip is in flight. */
+.clip-spinner {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.clip-spinner.htmx-request { display: inline-flex; }
+
+.spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: clip-spin 0.6s linear infinite;
+}
+
+@keyframes clip-spin { to { transform: rotate(360deg); } }
+
+.clip-msg {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+}
+.clip-msg .icon { flex: none; }
+.clip-msg.is-ok  { color: var(--accent); }
+.clip-msg.is-err { color: oklch(55% 0.18 25); }
 
 /* ── Focus mode ───────────────────────────────────────────────────────── */
 .shell.is-focus .topbar  { transform: translateY(-100%); opacity: 0; pointer-events: none; }

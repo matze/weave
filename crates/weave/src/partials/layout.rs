@@ -85,16 +85,26 @@ pub(crate) fn layout(
                 @if authenticated {
                     div class="clip-drawer" #clip-drawer {
                         h3 { "Clip a URL" }
-                        div class="clip-row" {
+                        form class="clip-row" #clip-form
+                            hx-post="/clip"
+                            hx-target="#clip-status"
+                            hx-swap="innerHTML"
+                            hx-indicator="#clip-spinner"
+                            hx-disabled-elt="#clip-submit" {
                             input #clip-input type="url" name="url"
-                                placeholder="https://…"
-                                hx-post="/clip"
-                                hx-trigger="keyup[key=='Enter']"
-                                hx-swap="none"
-                                {}
+                                placeholder="https://…" required {}
+                            button type="submit" class="btn btn-primary" #clip-submit {
+                                "Clip"
+                            }
                             button type="button" class="btn btn-ghost" #clip-cancel {
                                 "Cancel"
                             }
+                        }
+                        div class="clip-foot" {
+                            span class="clip-spinner" #clip-spinner aria-hidden="true" {
+                                span class="spinner" {} "Clipping…"
+                            }
+                            div class="clip-status" #clip-status role="status" aria-live="polite" {}
                         }
                     }
                 }
