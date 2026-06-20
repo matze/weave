@@ -7,7 +7,7 @@ mod partials;
 mod zk;
 
 use std::convert::Infallible;
-use std::net::{Ipv4Addr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, mpsc};
 
@@ -239,6 +239,11 @@ async fn main() -> Result<()> {
         tracing::warn!("no password set, login is effectively disabled");
     }
 
+    let host: IpAddr = match std::env::var("WEAVE_HOST") {
+        Ok(host) => host.parse()?,
+        _ => Ipv4Addr::LOCALHOST.into(),
+    };
+
     let port = std::env::var("WEAVE_PORT")
         .ok()
         .map(|port| port.parse::<u16>())
@@ -303,13 +308,7 @@ async fn main() -> Result<()> {
             .layer(TraceLayer::new_for_http()),
     );
 
-
-    let host: Ipv4Addr = match std::env::var("WEAVE_HOST") {
-        Ok(host) => host.parse().unwrap(),
-        _ => Ipv4Addr::LOCALHOST.into()
-    };
-
-    let addr = SocketAddr::new(host.into(), port);
+    let addr = SocketAddr::new(host, port);
     let listener = tokio::net::TcpListener::bind(addr).await?;
     tracing::info!("serving on {addr:?}");
     let _ = (watch(notebook, events_tx), axum::serve(listener, app))
