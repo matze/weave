@@ -128,7 +128,7 @@ enum MdNode {
 }
 
 static WIKI_LINK_RE: LazyLock<regex::Regex> =
-    LazyLock::new(|| regex::Regex::new(r"^(?:\.{0,2}/)*(?P<stem>\w+)$").expect("compiling regex"));
+    LazyLock::new(|| regex::Regex::new(r"^(?:\.{0,2}/)*(?P<stem>[\w-]+)$").expect("compiling regex"));
 
 fn build_tree(parser: Parser) -> MdNode {
     let mut stack: Vec<(MdTag, Vec<MdNode>)> = vec![(MdTag::Root, Vec::new())];
@@ -777,6 +777,21 @@ mod tests {
     #[test]
     fn test_wiki_link_rejects_extension() {
         assert_eq!(wiki_stem("file.txt"), None);
+    }
+
+     #[test]
+    fn test_wiki_link_with_hyphens() {
+        assert_eq!(wiki_stem("my-note"), Some("my-note".into()));
+        assert_eq!(wiki_stem("a-b-c"), Some("a-b-c".into()));
+        assert_eq!(wiki_stem("../my-note"), Some("my-note".into()));
+    }
+
+    #[test]
+    fn test_render_wiki_link_with_hyphens() {
+        let html = markdown_to_html("[note](my-note)").into_string();
+        assert!(html.contains(r#"hx-get="/f/my-note""#), "{html}");
+        assert!(html.contains(r#"hx-push-url="/note/my-note""#), "{html}");
+        assert!(html.contains("note"));
     }
 
     #[test]
