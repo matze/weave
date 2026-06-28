@@ -373,7 +373,7 @@ fn wiki_link_stem(url: &str) -> Option<&str> {
             break;
         }
     }
-    if !rest.is_empty() && rest.chars().all(|c| c.is_alphanumeric() || c == '_') {
+    if !rest.is_empty() && rest.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-') {
         Some(rest)
     } else {
         None
@@ -652,6 +652,14 @@ mod tests {
     fn test_wiki_link_stem_rejects_url() {
         assert_eq!(wiki_link_stem("https://example.com"), None);
         assert_eq!(wiki_link_stem("file.md"), None);
+    }
+
+    #[test]
+    fn test_wiki_link_stem_hyphens() {
+        assert_eq!(wiki_link_stem("my-note"), Some("my-note"));
+        assert_eq!(wiki_link_stem("a-b-c"), Some("a-b-c"));
+        assert_eq!(wiki_link_stem("./my-note"), Some("my-note"));
+        assert_eq!(wiki_link_stem("../my-note"), Some("my-note"));
     }
 
     #[test]
