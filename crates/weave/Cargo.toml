@@ -15,7 +15,7 @@ htmd = "0.5"
 jiff = { version = "0.2", features = ["serde"] }
 jsonwebtoken = { version = "10.2.0", features = ["rust_crypto"] }
 maud = { git = "https://github.com/lambda-fairy/maud", features = ["axum"] }
-merman = { version = "=0.8.0-alpha.1", features = ["render"] }
+merman = { version = "=0.8.0-alpha.3", features = ["render"] }
 notify = "8.0.0"
 pulldown-cmark = "0.13"
 rand = "0.10.0"
@@ -29,7 +29,7 @@ thiserror = "2.0.10"
 tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread", "sync"] }
 tokio-stream = { version = "0.1", features = ["sync"] }
 tower = "0.5.3"
-tower-http = { version = "0.6.8", features = ["compression-full", "fs", "trace"] }
+tower-http = { version = "0.7.0", features = ["compression-full", "fs", "trace"] }
 tracing = "0.1.41"
 tracing-subscriber = "0.3.19"
 two-face = "0.5"
