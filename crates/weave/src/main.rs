@@ -14,8 +14,8 @@ use std::sync::{Arc, Mutex, mpsc};
 use anyhow::Result;
 use axum::Router;
 use axum::extract::{Form, FromRef, State};
-use axum::response::Redirect;
 use axum::response::sse::{Event, KeepAlive, Sse};
+use axum::response::{IntoResponse, Redirect, Response};
 use axum::routing::{get, post};
 use axum_extra::extract::SignedCookieJar;
 use axum_extra::extract::cookie::{Cookie, Key};
@@ -89,15 +89,15 @@ async fn do_login(
     State(state): State<AppState>,
     State(issuer): State<Issuer>,
     Form(login): Form<Login>,
-) -> (SignedCookieJar, Redirect) {
+) -> Response {
     if login.password == state.password {
         tracing::info!("successful login");
         let token = issuer.new_token();
         let cookie = Cookie::build(("jwt", token)).build();
-        (jar.add(cookie), Redirect::to("/"))
+        (jar.add(cookie), Redirect::to("/")).into_response()
     } else {
         tracing::warn!("failed login attempt");
-        (jar.remove("jwt"), Redirect::to("/"))
+        (jar.remove("jwt"), pages::login::login_failed()).into_response()
     }
 }
 

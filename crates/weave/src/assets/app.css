@@ -28,6 +28,7 @@ button { font: inherit; color: inherit; }
   --accent-fg:     oklch(99%   0     0);
   --tag-bg:        oklch(95%   0.005 80);
   --tag-fg:        oklch(40%   0.008 75);
+  --danger:        oklch(55%   0.18  25);
 
   --code-bg:            oklch(97%   0.005 80);
   --code-fg:            oklch(24%   0.008 75);
@@ -848,7 +849,7 @@ body:not([data-note]) #mode-segctl { display: none; }
 }
 .clip-msg .icon { flex: none; }
 .clip-msg.is-ok  { color: var(--accent); }
-.clip-msg.is-err { color: oklch(55% 0.18 25); }
+.clip-msg.is-err { color: var(--danger); }
 
 /* ── Focus mode ───────────────────────────────────────────────────────── */
 .shell.is-focus .topbar  { transform: translateY(-100%); opacity: 0; pointer-events: none; }
@@ -884,6 +885,11 @@ body:not([data-note]) #mode-segctl { display: none; }
   outline: none;
 }
 .login-input:focus { border-color: var(--accent); background: var(--bg-elev); }
+.login-error {
+  margin: -8px 0 0;
+  font-size: 13px;
+  color: var(--danger);
+}
 
 /* ── Icons ────────────────────────────────────────────────────────────── */
 .icon {

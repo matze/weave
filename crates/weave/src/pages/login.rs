@@ -20,3 +20,23 @@ pub(crate) async fn login() -> Markup {
         }
     }
 }
+
+pub(crate) fn login_failed() -> Markup {
+    html! {
+        (DOCTYPE)
+        html lang="en" {
+            (partials::head::head())
+            body class="login" {
+                form class="login-form" action="/login" method="post" {
+                    input class="login-input"
+                        type="password"
+                        name="password"
+                        id="password"
+                        placeholder="Password";
+                    p class="login-error" role="alert" { "Incorrect password" }
+                    button class="btn btn-primary" type="submit" { "Login" }
+                }
+            }
+        }
+    }
+}
