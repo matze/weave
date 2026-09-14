@@ -73,6 +73,12 @@ impl FromRef<AppState> for Key {
     }
 }
 
+impl FromRef<AppState> for extract::LoginDisabled {
+    fn from_ref(state: &AppState) -> Self {
+        extract::LoginDisabled(state.password.is_empty())
+    }
+}
+
 impl FromRef<AppState> for EventSender {
     fn from_ref(state: &AppState) -> Self {
         state.events_tx.clone()
@@ -88,8 +94,13 @@ async fn do_login(
     jar: SignedCookieJar,
     State(state): State<AppState>,
     State(issuer): State<Issuer>,
+    State(extract::LoginDisabled(login_disabled)): State<extract::LoginDisabled>,
     Form(login): Form<Login>,
 ) -> Response {
+    if login_disabled {
+        return Redirect::to("/").into_response();
+    }
+
     if login.password == state.password {
         tracing::info!("successful login");
         let token = issuer.new_token();
@@ -235,14 +246,20 @@ async fn main() -> Result<()> {
 
     let password = std::env::var("WEAVE_PASSWORD").ok().unwrap_or_default();
 
-    if password.is_empty() {
-        tracing::warn!("no password set, login is effectively disabled");
-    }
-
     let host: IpAddr = match std::env::var("WEAVE_HOST") {
         Ok(host) => host.parse()?,
         _ => Ipv4Addr::LOCALHOST.into(),
     };
+
+    if password.is_empty() {
+        if host.is_loopback() {
+            tracing::warn!("no password set, login disabled, all notes are readable and editable");
+        } else {
+            tracing::error!(
+                "no password set and listening on {host}: anyone who can reach this address can read and edit all notes"
+            );
+        }
+    }
 
     let port = std::env::var("WEAVE_PORT")
         .ok()

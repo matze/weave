@@ -8,8 +8,12 @@ use crate::{Notebook, assets};
 /// When `show_note` is true the body carries `data-note`, which hides the
 /// sidebar on mobile. The shell uses a CSS grid so that focus mode can slide
 /// the chrome out without reflowing the note column.
+///
+/// When `login_disabled` is true there is no session to sign in to or out of,
+/// so the sign-in and sign-out buttons are omitted.
 pub(crate) fn layout(
     authenticated: bool,
+    login_disabled: bool,
     notebook: Notebook,
     content: Markup,
     show_note: bool,
@@ -70,13 +74,15 @@ pub(crate) fn layout(
                             title="Toggle theme (D)" aria-label="Toggle theme" {
                             (assets::icons::moon())
                         }
-                        @if authenticated {
-                            a href="/logout" class="tb-btn" aria-label="Sign out" title="Sign out" {
-                                (assets::icons::sign_out())
-                            }
-                        } @else {
-                            a href="/login" class="tb-btn" aria-label="Sign in" title="Sign in" {
-                                (assets::icons::sign_in())
+                        @if !login_disabled {
+                            @if authenticated {
+                                a href="/logout" class="tb-btn" aria-label="Sign out" title="Sign out" {
+                                    (assets::icons::sign_out())
+                                }
+                            } @else {
+                                a href="/login" class="tb-btn" aria-label="Sign in" title="Sign in" {
+                                    (assets::icons::sign_in())
+                                }
                             }
                         }
                     }
