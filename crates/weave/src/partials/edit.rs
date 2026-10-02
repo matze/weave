@@ -95,7 +95,11 @@ pub(crate) async fn save(
     } else {
         "note-body no-rail"
     };
-    let note_class = if has_rail { "note" } else { "note note--no-rail" };
+    let note_class = if has_rail {
+        "note"
+    } else {
+        "note note--no-rail"
+    };
 
     Ok((
         [(HX_TRIGGER, "notes-updated")],

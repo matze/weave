@@ -373,7 +373,11 @@ fn wiki_link_stem(url: &str) -> Option<&str> {
             break;
         }
     }
-    if !rest.is_empty() && rest.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-') {
+    if !rest.is_empty()
+        && rest
+            .chars()
+            .all(|c| c.is_alphanumeric() || c == '_' || c == '-')
+    {
         Some(rest)
     } else {
         None

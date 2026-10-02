@@ -2,14 +2,54 @@
 
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
-use std::sync::{LazyLock, Mutex};
+use std::sync::LazyLock;
 
 use maud::{Markup, PreEscaped, html};
-use merman::render::HeadlessRenderer;
 use merman::MermaidConfig;
+use merman::render::HeadlessRenderer;
+use parking_lot::Mutex;
 use pulldown_cmark::{BlockQuoteKind, CodeBlockKind, Event, Options, Parser, Tag as CmarkTag};
+use ratex_layout::layout_options::LayoutOptions;
+use ratex_svg::SvgOptions;
+use ratex_types::math_style::MathStyle;
 use syntect::html::{ClassStyle, ClassedHTMLGenerator};
 use syntect::parsing::SyntaxSet;
+
+/// Body font size of `.md` in `app.css`. Math dimensions are converted from the render size into
+/// CSS `em` against this value, so formulas scale with the note.
+const MATH_BODY_EM: f64 = 15.0;
+
+/// RaTeX layout size. Math fonts read smaller than body text at the same size, so render ~20%
+/// larger (KaTeX uses the same `1.21em` correction).
+const MATH_RENDER_EM: f64 = 18.0;
+
+/// User units (px at `MATH_RENDER_EM`) of margin around the formula. Keeps glyph overshoot inside
+/// the SVG viewport instead of clipping it.
+const MATH_PAD: f64 = 1.5;
+
+/// Cache of rendered math, keyed by `(hash of source, display)`. Each entry holds the final wrapper
+/// markup, or `None` when the LaTeX failed to parse.
+static MATH_CACHE: LazyLock<Mutex<HashMap<(u64, bool), Option<String>>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
+/// Cache of rendered Mermaid diagrams, keyed by a hash of the diagram source. Each entry holds the
+/// `(light, dark)` SVG pair. Avoids re-rendering on every note view and on every keystroke in the
+/// live editor preview.
+static MERMAID_CACHE: LazyLock<Mutex<HashMap<u64, (String, String)>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
+static SPLITTER_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(
+        r#"(?m)(?P<tag>#[\w-]+)|(?P<url>https?://[^\s<>]+)|(?:(?:^|\s)(?P<colontags>:[\w-]+(?::[\w-]+)*:))"#,
+    )
+    .expect("compiling regex")
+});
+
+static WIKI_LINK_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
+    regex::Regex::new(r"^(?:\.{0,2}/)*(?P<stem>[\w-]+)$").expect("compiling regex")
+});
+
+static SYNTAX_SET: LazyLock<SyntaxSet> = LazyLock::new(two_face::syntax::extra_newlines);
 
 #[derive(Debug, Clone, Copy)]
 enum Segment<'a> {
@@ -18,13 +58,6 @@ enum Segment<'a> {
     ColonTags(&'a str),
     Url(&'a str),
 }
-
-static SPLITTER_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
-    regex::Regex::new(
-        r#"(?m)(?P<tag>#[\w-]+)|(?P<url>https?://[^\s<>]+)|(?:(?:^|\s)(?P<colontags>:[\w-]+(?::[\w-]+)*:))"#,
-    )
-    .expect("compiling regex")
-});
 
 struct Splitter<'a> {
     text: &'a str,
@@ -121,14 +154,13 @@ enum MdNode {
     /// Text rendered verbatim (inside code blocks, link labels).
     Plain(String),
     InlineCode(String),
+    InlineMath(String),
+    DisplayMath(String),
     RawHtml(String),
     SoftBreak,
     HardBreak,
     Rule,
 }
-
-static WIKI_LINK_RE: LazyLock<regex::Regex> =
-    LazyLock::new(|| regex::Regex::new(r"^(?:\.{0,2}/)*(?P<stem>[\w-]+)$").expect("compiling regex"));
 
 fn build_tree(parser: Parser) -> MdNode {
     let mut stack: Vec<(MdTag, Vec<MdNode>)> = vec![(MdTag::Root, Vec::new())];
@@ -216,6 +248,20 @@ fn build_tree(parser: Parser) -> MdNode {
                     .1
                     .push(MdNode::InlineCode(c.to_string()));
             }
+            Event::InlineMath(t) => {
+                stack
+                    .last_mut()
+                    .unwrap()
+                    .1
+                    .push(MdNode::InlineMath(t.to_string()));
+            }
+            Event::DisplayMath(t) => {
+                stack
+                    .last_mut()
+                    .unwrap()
+                    .1
+                    .push(MdNode::DisplayMath(t.to_string()));
+            }
             Event::Html(h) | Event::InlineHtml(h) => {
                 stack
                     .last_mut()
@@ -292,7 +338,11 @@ fn collect_text(nodes: &[MdNode]) -> String {
     let mut s = String::new();
     for node in nodes {
         match node {
-            MdNode::Text(t) | MdNode::Plain(t) | MdNode::InlineCode(t) => s.push_str(t),
+            MdNode::Text(t)
+            | MdNode::Plain(t)
+            | MdNode::InlineCode(t)
+            | MdNode::InlineMath(t)
+            | MdNode::DisplayMath(t) => s.push_str(t),
             MdNode::Element(_, children) => s.push_str(&collect_text(children)),
             MdNode::SoftBreak | MdNode::HardBreak => s.push(' '),
             _ => {}
@@ -420,6 +470,8 @@ fn render_node(node: &MdNode) -> Markup {
         MdNode::Text(t) => text_to_html(t),
         MdNode::Plain(t) => html! { (t) },
         MdNode::InlineCode(c) => html! { code { (c) } },
+        MdNode::InlineMath(src) => render_math(src, false),
+        MdNode::DisplayMath(src) => render_math(src, true),
         MdNode::RawHtml(h) => PreEscaped(h.clone()),
         MdNode::SoftBreak => PreEscaped("\n".to_owned()),
         MdNode::HardBreak => html! { br; },
@@ -427,7 +479,129 @@ fn render_node(node: &MdNode) -> Markup {
     }
 }
 
-static SYNTAX_SET: LazyLock<SyntaxSet> = LazyLock::new(two_face::syntax::extra_newlines);
+/// Render a LaTeX expression (`$…$` or `$$…$$`) to a self-contained SVG.
+fn render_math(source: &str, display: bool) -> Markup {
+    let key = {
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        source.hash(&mut hasher);
+        (hasher.finish(), display)
+    };
+
+    if let Some(cached) = MATH_CACHE.lock().get(&key).cloned() {
+        return cached.map_or_else(|| math_fallback(source, display), PreEscaped);
+    }
+
+    let rendered = math_html(source, display);
+    MATH_CACHE.lock().insert(key, rendered.clone());
+
+    rendered.map_or_else(|| math_fallback(source, display), PreEscaped)
+}
+
+/// Parse and lay out a LaTeX expression into wrapper markup. Returns `None` when the expression
+/// fails to parse so the caller can show the source instead.
+fn math_html(source: &str, display: bool) -> Option<String> {
+    let nodes = ratex_parser::parse(source).ok()?;
+
+    let style = if display {
+        MathStyle::Display
+    } else {
+        MathStyle::Text
+    };
+
+    let layout_box = ratex_layout::layout(&nodes, &LayoutOptions::default().with_style(style));
+    let list = ratex_layout::to_display_list(&layout_box);
+
+    let options = SvgOptions {
+        font_size: MATH_RENDER_EM,
+        padding: MATH_PAD,
+        stroke_width: 1.5,
+        embed_glyphs: true,
+        font_dir: String::new(),
+    };
+    let svg = svg_for_embedding(&ratex_svg::render_to_svg(&list, &options), source);
+
+    // Distance from the baseline to the bottom of the SVG (`depth` plus the padding), converted
+    // from render units into CSS `em`.
+    let depth_em = (list.depth * MATH_RENDER_EM + MATH_PAD) / MATH_BODY_EM;
+
+    Some(if display {
+        format!(r#"<span class="md-math md-math--display">{svg}</span>"#)
+    } else {
+        format!(
+            r#"<span class="md-math md-math--inline" style="vertical-align: -{depth_em:.3}em">{svg}</span>"#
+        )
+    })
+}
+
+/// Rewrite RaTeX's `<svg>` opening tag: size the diagram in CSS `em` for proper scaling, expose the
+/// LaTeX through `aria-label` (glyphs are outline paths, so the SVG carries no selectable text),
+/// and repaint the default black ink with `currentColor` so formulas follow the light/dark theme.
+fn svg_for_embedding(raw: &str, source: &str) -> String {
+    let Some(end) = raw.find('>') else {
+        return raw.to_owned();
+    };
+    let open = &raw[..=end];
+    let body = &raw[end + 1..];
+
+    // Reuse RaTeX's viewBox so the `em` size stays in lockstep with the intrinsic (padded)
+    // dimensions.
+    let (view_w, view_h) = view_box_dims(open).unwrap_or((0.0, 0.0));
+    let width = view_w / MATH_BODY_EM;
+    let height = view_h / MATH_BODY_EM;
+
+    let body = body.replace("rgba(0,0,0,1)", "currentColor");
+
+    format!(
+        r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {view_w} {view_h}" width="{width:.4}em" height="{height:.4}em" role="img" aria-label="{label}">{body}"#,
+        label = escape_attr(source),
+    )
+}
+
+/// Extract the `viewBox` width and height from an opening `<svg>` tag.
+fn view_box_dims(open_tag: &str) -> Option<(f64, f64)> {
+    let value = attr(open_tag, "viewBox")?;
+    let mut parts = value.split_whitespace();
+    let _min_x = parts.next()?;
+    let _min_y = parts.next()?;
+    let width = parts.next()?.parse().ok()?;
+    let height = parts.next()?.parse().ok()?;
+    Some((width, height))
+}
+
+/// Read the value of a double-quoted attribute from an opening tag.
+fn attr<'a>(tag: &'a str, name: &str) -> Option<&'a str> {
+    let key = format!("{name}=\"");
+    let start = tag.find(&key)? + key.len();
+    let rest = &tag[start..];
+    let end = rest.find('"')?;
+    Some(&rest[..end])
+}
+
+/// Fallback for LaTeX that fails to parse.
+fn math_fallback(source: &str, display: bool) -> Markup {
+    let class = if display {
+        "md-math md-math--display md-math--error"
+    } else {
+        "md-math md-math--inline md-math--error"
+    };
+    html! { span class=(class) { (source) } }
+}
+
+/// Escape a string for use in an HTML attribute value.
+fn escape_attr(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for ch in s.chars() {
+        match ch {
+            '&' => out.push_str("&amp;"),
+            '<' => out.push_str("&lt;"),
+            '>' => out.push_str("&gt;"),
+            '"' => out.push_str("&quot;"),
+            '\'' => out.push_str("&#39;"),
+            _ => out.push(ch),
+        }
+    }
+    out
+}
 
 fn highlight_code(source: &str, lang: Option<&str>) -> Option<String> {
     let lang = lang?;
@@ -448,12 +622,6 @@ fn highlight_code(source: &str, lang: Option<&str>) -> Option<String> {
     Some(generator.finalize())
 }
 
-/// Cache of rendered Mermaid diagrams, keyed by a hash of the diagram source.
-/// Each entry holds the `(light, dark)` SVG pair. Avoids re-rendering on every
-/// note view and on every keystroke in the live editor preview.
-static MERMAID_CACHE: LazyLock<Mutex<HashMap<u64, (String, String)>>> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
-
 /// Render a `mermaid` fenced block into a light and a dark SVG variant, toggled
 /// by CSS (`.mermaid-light` / `.mermaid-dark`). Returns `None` if either variant
 /// fails to render, so the caller can fall back to showing the source.
@@ -465,14 +633,13 @@ fn render_mermaid(source: &str) -> Option<Markup> {
     };
 
     let (light, dark) = {
-        if let Some(cached) = MERMAID_CACHE.lock().unwrap().get(&key).cloned() {
+        if let Some(cached) = MERMAID_CACHE.lock().get(&key).cloned() {
             cached
         } else {
             let light = render_mermaid_svg(source, MermaidTheme::Light, key)?;
             let dark = render_mermaid_svg(source, MermaidTheme::Dark, key)?;
             MERMAID_CACHE
                 .lock()
-                .unwrap()
                 .insert(key, (light.clone(), dark.clone()));
             (light, dark)
         }
@@ -663,14 +830,18 @@ fn fit_svg(svg: &str) -> String {
     format!("{open_tag}{rest}")
 }
 
+/// Markdown extensions weave enables: GitHub tables, strikethrough and
+/// autolinks, smart punctuation, and `$…$` / `$$…$$` math.
+fn parser_options() -> Options {
+    Options::ENABLE_TABLES
+        | Options::ENABLE_STRIKETHROUGH
+        | Options::ENABLE_SMART_PUNCTUATION
+        | Options::ENABLE_GFM
+        | Options::ENABLE_MATH
+}
+
 pub fn markdown_to_html(source: &str) -> Markup {
-    let parser = Parser::new_ext(
-        source,
-        Options::ENABLE_TABLES
-            | Options::ENABLE_STRIKETHROUGH
-            | Options::ENABLE_SMART_PUNCTUATION
-            | Options::ENABLE_GFM,
-    );
+    let parser = Parser::new_ext(source, parser_options());
 
     let tree = build_tree(parser);
 
@@ -699,13 +870,7 @@ pub fn heading_anchor(text: &str) -> String {
 
 /// Parse markdown once; return rendered HTML and extracted headings together.
 pub fn markdown_to_html_with_headings(source: &str) -> (Markup, Vec<Heading>) {
-    let parser = Parser::new_ext(
-        source,
-        Options::ENABLE_TABLES
-            | Options::ENABLE_STRIKETHROUGH
-            | Options::ENABLE_SMART_PUNCTUATION
-            | Options::ENABLE_GFM,
-    );
+    let parser = Parser::new_ext(source, parser_options());
     let tree = build_tree(parser);
     let headings = collect_headings_from_tree(&tree);
     let html = render_node(&tree);
@@ -779,7 +944,7 @@ mod tests {
         assert_eq!(wiki_stem("file.txt"), None);
     }
 
-     #[test]
+    #[test]
     fn test_wiki_link_with_hyphens() {
         assert_eq!(wiki_stem("my-note"), Some("my-note".into()));
         assert_eq!(wiki_stem("a-b-c"), Some("a-b-c".into()));
@@ -819,8 +984,7 @@ mod tests {
 
     #[test]
     fn test_external_link_with_url_label_has_single_icon() {
-        let html =
-            markdown_to_html("[http://localhost:8000](http://localhost:8000)").into_string();
+        let html = markdown_to_html("[http://localhost:8000](http://localhost:8000)").into_string();
         assert_eq!(html.matches("md-ext-icon").count(), 1, "{html}");
         assert_eq!(html.matches("<a ").count(), 1, "{html}");
     }
@@ -945,10 +1109,68 @@ mod tests {
             let html = markdown_to_html(src).into_string();
             // Markup is light variant then dark variant; the dark SVG follows the
             // `mermaid-dark` class.
-            let (_, dark) = html.split_once("mermaid-dark").expect("dark variant present");
+            let (_, dark) = html
+                .split_once("mermaid-dark")
+                .expect("dark variant present");
             for bad in ["#eaeaea", "fill=\"white\"", "#ECECFF", "#fff5ad"] {
-                assert!(!dark.contains(bad), "dark variant still contains {bad}: {dark}");
+                assert!(
+                    !dark.contains(bad),
+                    "dark variant still contains {bad}: {dark}"
+                );
             }
         }
+    }
+
+    #[test]
+    fn test_inline_math_renders_svg() {
+        let src = r"The transfer function is $H(s) = \frac{1}{1 + sRC}$.";
+        let html = markdown_to_html(src).into_string();
+        assert!(html.contains("md-math--inline"), "{html}");
+        assert!(html.contains("<svg"), "{html}");
+        assert!(html.contains("currentColor"), "{html}");
+        assert!(
+            html.contains(r#"aria-label="H(s) = \frac{1}{1 + sRC}""#),
+            "{html}"
+        );
+    }
+
+    #[test]
+    fn test_display_math_renders_svg() {
+        let src = "$$\nX(f) = \\int_{-\\infty}^{\\infty} x(t)\\, e^{-j 2 \\pi f t}\\, dt\n$$";
+        let html = markdown_to_html(src).into_string();
+        assert!(html.contains("md-math--display"), "{html}");
+        assert!(html.contains("<svg"), "{html}");
+        assert!(html.contains("currentColor"), "{html}");
+    }
+
+    #[test]
+    fn test_math_inside_fenced_code_is_literal() {
+        let html = markdown_to_html("```\n$x + y$\n```").into_string();
+        assert!(!html.contains("<svg"), "{html}");
+        assert!(html.contains("<pre>"), "{html}");
+        assert!(html.contains("$x + y$"), "{html}");
+    }
+
+    #[test]
+    fn test_math_inside_inline_code_is_literal() {
+        let html = markdown_to_html("use `$x$` here").into_string();
+        assert!(!html.contains("<svg"), "{html}");
+        assert!(html.contains("<code>$x$</code>"), "{html}");
+    }
+
+    /// The `$…$` extension must not eat currency amounts separated by words; a
+    /// span with leading/trailing whitespace is not math.
+    #[test]
+    fn test_currency_is_not_math() {
+        let html = markdown_to_html("costs $5 to $10 today").into_string();
+        assert!(!html.contains("md-math"), "{html}");
+    }
+
+    #[test]
+    fn test_undefined_command_falls_back_to_source() {
+        let html = markdown_to_html(r"$\undefinedx$").into_string();
+        assert!(html.contains("md-math--error"), "{html}");
+        assert!(!html.contains("<svg"), "{html}");
+        assert!(html.contains(r"\undefinedx"), "{html}");
     }
 }

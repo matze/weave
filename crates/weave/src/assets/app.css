@@ -710,6 +710,29 @@ body:not([data-note]) #mode-segctl { display: none; }
   :root:not([data-theme="light"]) .md .mermaid-dark { display: flex; }
 }
 
+/* ── Math (RaTeX) ─────────────────────────────────────────────────────── */
+/* The server renders formulas to self-contained SVG whose glyph outlines use
+   `currentColor`, so one diagram serves both themes. Sizing is in `em`, so
+   formulas track the surrounding text. */
+.md .md-math { color: var(--fg); }
+.md .md-math svg { display: inline-block; max-width: 100%; }
+.md .md-math--display {
+  display: block;
+  margin: 1em 0;
+  overflow-x: auto;
+  text-align: center;
+}
+/* Wide display formulas keep their native size and scroll in the block above
+   rather than scaling the glyphs down below the surrounding prose. */
+.md .md-math--display svg { max-width: none; }
+.md .md-math--error {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  background: var(--bg-soft);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
 /* ── Editor ───────────────────────────────────────────────────────────── */
 .editor {
   display: flex;

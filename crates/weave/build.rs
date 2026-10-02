@@ -26,9 +26,7 @@ fn build_highlight_css() -> String {
     let dark_explicit = prefix_selectors(&dark_css, r#"[data-theme="dark"]"#);
     let dark_os = prefix_selectors(&dark_css, r#":root:not([data-theme="light"])"#);
 
-    format!(
-        "{light_css}\n{dark_explicit}\n@media (prefers-color-scheme: dark) {{\n{dark_os}\n}}\n"
-    )
+    format!("{light_css}\n{dark_explicit}\n@media (prefers-color-scheme: dark) {{\n{dark_os}\n}}\n")
 }
 
 fn strip_background_color(css: &str) -> String {

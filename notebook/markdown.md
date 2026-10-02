@@ -5,7 +5,6 @@ Flavored Markdown extensions and a few zk-specific niceties. This page
 demonstrates every supported feature so you can copy the patterns into your own
 notes.
 
-
 ## Headings
 
 Use `#` through `######` for headings. Each heading gets a URL-safe anchor so
@@ -19,7 +18,6 @@ you can deep-link to a section, like [the lists section](#lists).
 
 ###### Sixth level
 
-
 ## Inline formatting
 
 You can write **bold**, *italic*, ***bold italic*** and ~~strikethrough~~
@@ -28,7 +26,6 @@ quotes into curly ones and `--` into en dashes automatically.
 
 A line ending with two trailing spaces  
 forces a hard line break.
-
 
 ## Lists
 
@@ -47,12 +44,10 @@ Ordered lists use numbers:
 2. Point it at a notebook
 3. Open the browser
 
-
 ## Blockquotes
 
 > A regular blockquote is rendered with a thin accent bar and slightly muted
 > italic text. Useful for citing other notes or external sources.
-
 
 ## Admonitions
 
@@ -74,7 +69,6 @@ recognised:
 
 > [!CAUTION]
 > Cautions describe negative outcomes of an action.
-
 
 ## Code
 
@@ -104,10 +98,9 @@ def fib(n: int) -> int:
 
 Code blocks without a language are rendered verbatim, without highlighting:
 
-```
+```text
 plain monospace text
 ```
-
 
 ## Diagrams
 
@@ -141,6 +134,23 @@ sequenceDiagram
     S-->>E: SSE reload event
 ```
 
+## Math
+
+Write inline math between single dollar signs and display math between double
+dollars.
+
+The transfer function is $H(s) = \frac{1}{1 + sRC}$.
+
+$$
+X(f) = \int_{-\infty}^{\infty} x(t)\, e^{-j 2 \pi f t}\, dt
+$$
+
+Dollar signs inside code blocks and inline `code spans` are left untouched:
+`$x$`.
+
+A lone `$` used for currency is only treated as math when it can close a
+formula, so `costs $5 to $10` stays plain text. Use `\$` or a code span to force
+a literal dollar sign next to math.
 
 ## Tables
 
@@ -151,12 +161,11 @@ sequenceDiagram
 | `WEAVE_PORT`         | Port the server listens on               | `8000`       |
 | `WEAVE_HOST`         | IP address the server listens on         | `127.0.0.1`  |
 
-
 ## Links
 
 External links open the target URL and are marked with a small arrow icon, like
 [the zk project page](https://github.com/zk-org/zk). Bare URLs are auto-linked
-too: https://example.com.
+too: <https://example.com>.
 
 Reference-style links work as well, e.g. [the zk tags docs][tags].
 
@@ -168,7 +177,6 @@ Internal links to other notes use the destination note's filename stem:
 
 Relative paths such as `./usage` or `../usage` are accepted and resolve to the
 same note.
-
 
 ## Tags
 
@@ -190,7 +198,6 @@ Weave adds special behaviour to three tags:
 - `#archived` pushes a note to the bottom of the sidebar and greys it out to
   reduce clutter.
 
-
 ## Images
 
 Images use the standard `![alt](path)` syntax. Relative paths are made
@@ -201,7 +208,6 @@ particularly useful together with the `WEAVE_ATTACHMENTS` directory.
 ![diagram](media/diagram.png)
 ```
 
-
 ## Horizontal rules
 
 Three or more dashes on their own line produce a horizontal rule:
@@ -209,7 +215,6 @@ Three or more dashes on their own line produce a horizontal rule:
 ---
 
 Useful for separating loosely related sections inside a single note.
-
 
 [tags]: https://zk-org.github.io/zk/notes/tags.html
 

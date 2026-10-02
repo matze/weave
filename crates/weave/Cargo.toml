@@ -17,8 +17,13 @@ jsonwebtoken = { version = "10.2.0", features = ["rust_crypto"] }
 maud = { git = "https://github.com/lambda-fairy/maud", features = ["axum"] }
 merman = { version = "=0.8.0-alpha.3", features = ["render"] }
 notify = "8.0.0"
+parking_lot = "0.12"
 pulldown-cmark = "0.13"
 rand = "0.10.0"
+ratex-layout = "0.1.14"
+ratex-parser = "0.1.14"
+ratex-svg = { version = "0.1.14", features = ["standalone", "embed-fonts"] }
+ratex-types = "0.1.14"
 regex = "1.11.1"
 reqwest = { version = "0.13.2", default-features = false, features = ["rustls"] }
 ring = "0.17.14"
