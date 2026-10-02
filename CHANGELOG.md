@@ -13,6 +13,14 @@ and this project adheres to
 - Render LaTeX math (`$…$` and `$$…$$`) as server-rendered SVG via RaTeX. Math
   inside code blocks and inline code is left untouched.
 
+### Changed
+
+- Disable login form when login password is not set.
+
+### Fixed
+
+- Allow hyphens in tag names.
+
 ## [0.1.0]
 
 ### Added
