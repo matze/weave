@@ -40,5 +40,6 @@ Will listen on 192.168.1.1:3000
 | `WEAVE_PASSWORD` | Password for signing in | (empty) |
 | `WEAVE_PORT` | Port the server listens on | `8000` |
 | `WEAVE_HOST`         | IP address the server listens on         | `127.0.0.1`  |
+| `WEAVE_ATTACHMENTS`  | Subdirectory inside `ZK_NOTEBOOK_DIR` served as static files (e.g. `media`) | (disabled) |
 
 #public

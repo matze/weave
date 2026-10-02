@@ -39,11 +39,13 @@ Point Weave at a zk notebook directory (here we use the demo notebook), set a
 password and run the application from source with:
 
 ```bash
-ZK_NOTEBOOK_DIR="$(pwd)/notebook" WEAVE_PASSWORD="secret" cargo run --release
+ZK_NOTEBOOK_DIR="$(pwd)/notebook" WEAVE_ATTACHMENTS="media" WEAVE_PASSWORD="secret" cargo run --release
 ```
 
 This starts the server on [http://localhost:8000](http://localhost:8000). A demo
-instance can be accessed at https://weave.bloerg.net.
+instance can be accessed at https://weave.bloerg.net. The demo notebook keeps
+its images and other static files in `notebook/media`, so `WEAVE_ATTACHMENTS`
+points at that subdirectory.
 
 To work on your notes locally without signing in, leave `WEAVE_PASSWORD` unset.
 Login is then disabled, every note is readable and editable, and the sign-in
@@ -51,7 +53,7 @@ button is hidden. Only do this on a machine you trust, since anyone who can
 reach the port can edit your notes.
 
 ```bash
-ZK_NOTEBOOK_DIR="$(pwd)/notebook" cargo run --release
+ZK_NOTEBOOK_DIR="$(pwd)/notebook" WEAVE_ATTACHMENTS="media" cargo run --release
 ```
 
 

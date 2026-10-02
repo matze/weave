@@ -20,7 +20,7 @@ To start a server that hosts an editable version of this notebook, check out the
 code and run
 
 ```bash
-ZK_NOTEBOOK_DIR="$(pwd)/notebook" WEAVE_PASSWORD="secret" cargo run --release
+ZK_NOTEBOOK_DIR="$(pwd)/notebook" WEAVE_ATTACHMENTS="media" WEAVE_PASSWORD="secret" cargo run --release
 ```
 
 This starts the server on [http://localhost:8000](http://localhost:8000). You

@@ -73,9 +73,10 @@ notebook/
     photo.jpg
 ```
 
-Start Weave with `WEAVE_ATTACHMENTS=media` and reference the image from a note
-as `![photo](media/photo.jpg)`. Weave makes relative image paths root-absolute
-so they resolve correctly regardless of the page URL. Nested paths like
+Start Weave with `WEAVE_ATTACHMENTS=media` and reference the file from a note as
+`![photo](media/photo.jpg)` or link to it with `[photo](media/photo.jpg)`.
+Weave makes relative paths root-absolute so they resolve correctly regardless of
+the page URL, whether they are embedded images or plain links. Nested paths like
 `WEAVE_ATTACHMENTS=assets/img` work as well.
 
 #public

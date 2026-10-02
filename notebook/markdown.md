@@ -190,15 +190,18 @@ are recognised and turned into clickable filters:
 Tags can also be listed in the YAML frontmatter (`tags: [public, pin]`) instead
 of inline in the note body.
 
-## Images
+## Images and attachments
 
-Images use the standard `![alt](path)` syntax. Relative paths are made
+Images use the standard `![alt](path)` syntax, and any other file in the
+attachments directory can be linked with `[text](path)`. Relative paths are made
 root-absolute so they resolve regardless of the current note URL, which is
-particularly useful together with the `WEAVE_ATTACHMENTS` directory.
+particularly useful together with the `WEAVE_ATTACHMENTS` directory. Start the
+demo notebook with `WEAVE_ATTACHMENTS=media` to serve the files below. See the
+[usage section](usage) for how to configure it.
 
-```markdown
-![diagram](media/diagram.png)
-```
+![weave logo](media/weave.svg)
+
+[Link to the weave logo file](media/weave.svg)
 
 ## Horizontal rules
 

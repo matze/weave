@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <defs>
+    <linearGradient id="thread" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="32" y2="32">
+      <stop offset="0" stop-color="#0e7490" />
+      <stop offset=".5" stop-color="#7c3aed" />
+      <stop offset="1" stop-color="#ec4899" />
+    </linearGradient>
+  </defs>
+  <g stroke="url(#thread)" stroke-width="4" fill="none">
+    <path d="M10 0V6M10 14V32" />
+    <path d="M22 0V18M22 26V32" />
+    <path d="M0 10H18M26 10H32" />
+    <path d="M0 22H6M14 22H32" />
+  </g>
+</svg>
