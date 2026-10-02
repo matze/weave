@@ -21,9 +21,8 @@ Weave is a single-user application. Set `WEAVE_PASSWORD` to require sign-in.
 When signed in you can view and edit all notes. Without a password, login is
 disabled entirely.
 
-> [!TIP]
-> Tagging a note with `#public` makes it viewable (but not editable) without
-> signing in. This is useful for sharing individual notes with others.
+A note tagged `#public` is readable without signing in. See the Tags section
+below.
 
 ### Searching
 
@@ -50,6 +49,16 @@ previous note.
 
 For a distraction-free reading experience enable focus mode with the
 <kbd>f</kbd> key.
+
+## Tags
+
+Three special tags denote the representation of a note:
+
+- `#public` makes a note readable without signing in, so it can be shared with
+  others.
+- `#pin` sorts a note to the top of the sidebar for quick access.
+- `#archived` sorts a note to the bottom of the sidebar and greys it out to
+  reduce clutter.
 
 ## Attachments
 

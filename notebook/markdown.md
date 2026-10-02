@@ -180,23 +180,15 @@ same note.
 
 ## Tags
 
-Zk uses [tags][] to group and find notes of a related topic. Two tag styles
-are recognised inline and turned into clickable filters:
+Zk uses [tags][] to group and find notes of a related topic. Two inline styles
+are recognised and turned into clickable filters:
 
 - Hashtags like #example or #public open the sidebar filtered to that tag.
 - Colon tags borrow the zk convention: :draft:review: behaves the same way for
   each segment.
 
-Tags can also be placed in the YAML frontmatter (`tags: [public, pin]`) instead
+Tags can also be listed in the YAML frontmatter (`tags: [public, pin]`) instead
 of inline in the note body.
-
-Weave adds special behaviour to three tags:
-
-- `#public` makes a note accessible without signing in, useful for sharing
-  notes with others.
-- `#pin` moves a note to the top of the sidebar for quick access.
-- `#archived` pushes a note to the bottom of the sidebar and greys it out to
-  reduce clutter.
 
 ## Images
 
