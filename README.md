@@ -63,7 +63,7 @@ ZK_NOTEBOOK_DIR="$(pwd)/notebook" cargo run --release
 | `WEAVE_PASSWORD` | Password for signing in; unset disables login and opens all notes | (empty, login disabled) |
 | `WEAVE_PORT` | Port the server listens on | `8000` |
 | `WEAVE_HOST` | IP address the server listens on | `127.0.0.1` |
-| `WEAVE_ATTACHMENTS` | Subdirectory inside `ZK_NOTEBOOK_DIR` to serve as static files (e.g. `media`) | (disabled) |
+| `WEAVE_ATTACHMENTS` | Subdirectory inside `ZK_NOTEBOOK_DIR` serving static files under the same URL path (e.g. `media`) | (disabled) |
 
 
 ## License

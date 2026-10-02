@@ -21,6 +21,7 @@ and this project adheres to
 ### Fixed
 
 - Allow hyphens in tag names.
+- Resolve notebook-relative links to attachment files, not only images.
 
 ## [0.1.0]
 

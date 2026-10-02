@@ -1,5 +1,6 @@
 //! Render Markdown as HTML.
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::sync::LazyLock;
@@ -352,6 +353,31 @@ fn collect_text(nodes: &[MdNode]) -> String {
     s
 }
 
+/// Rewrite a notebook-root-relative target (typically an attachment path such as `media/marsh.jpg`)
+/// to a root-relative URL, so it resolves identically from any `/note/{stem}` document.
+/// Absolute/protocol-relative URLs, in-page fragments and queries, and explicit schemes (`https:`,
+/// `mailto:`, `data:`, `tel:`, …) are left untouched.
+fn resolve_url(url: &str) -> Cow<'_, str> {
+    if url.starts_with('/') || url.starts_with('#') || url.starts_with('?') || has_scheme(url) {
+        Cow::Borrowed(url)
+    } else {
+        Cow::Owned(format!("/{url}"))
+    }
+}
+
+/// Does `url` begin with a scheme (`https:`, `mailto:`, …)? A colon only counts as a scheme
+/// separator when it appears before any path, query, or fragment delimiter.
+fn has_scheme(url: &str) -> bool {
+    let Some(colon) = url.find(':') else {
+        return false;
+    };
+    let cut = url.find(['/', '?', '#']).unwrap_or(url.len());
+    colon < cut
+        && url[..colon]
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '-' | '.'))
+}
+
 fn render_node(node: &MdNode) -> Markup {
     match node {
         MdNode::Element(tag, children) => match tag {
@@ -419,12 +445,15 @@ fn render_node(node: &MdNode) -> Markup {
                     hx-push-url={ "/note/" (url) }
                 { (render_children(children)) }
             },
-            MdTag::ExternalLink(url) => html! {
-                a href=(url) {
-                    (render_children(children))
-                    span class="md-ext-icon" { "\u{2197}\u{FE0E}" }
+            MdTag::ExternalLink(url) => {
+                let href = resolve_url(url);
+                html! {
+                    a href=(href) {
+                        (render_children(children))
+                        span class="md-ext-icon" { "\u{2197}\u{FE0E}" }
+                    }
                 }
-            },
+            }
             MdTag::Table => {
                 let mut head = html! {};
                 let mut body_rows = Vec::new();
@@ -457,14 +486,7 @@ fn render_node(node: &MdNode) -> Markup {
                 } else {
                     Some(title.as_str())
                 };
-                let url = if !url.starts_with('/')
-                    && !url.starts_with("http://")
-                    && !url.starts_with("https://")
-                {
-                    format!("/{url}")
-                } else {
-                    url.clone()
-                };
+                let url = resolve_url(url);
                 html! { img src=(url) alt=(alt) title=[title]; }
             }
         },
@@ -1003,6 +1025,34 @@ mod tests {
         let html = markdown_to_html("[site](https://example.com)").into_string();
         assert!(html.contains(r#"href="https://example.com""#), "{html}");
         assert!(!html.contains("hx-get"), "{html}");
+    }
+
+    #[test]
+    fn test_render_attachment_link_is_root_relative() {
+        let html = markdown_to_html("[Link](media/marsh.jpg)").into_string();
+        assert!(html.contains(r#"href="/media/marsh.jpg""#), "{html}");
+    }
+
+    #[test]
+    fn test_render_nested_attachment_link() {
+        let html = markdown_to_html("[doc](media/sub/a.pdf)").into_string();
+        assert!(html.contains(r#"href="/media/sub/a.pdf""#), "{html}");
+    }
+
+    #[test]
+    fn test_render_attachment_image_is_root_relative() {
+        let html = markdown_to_html("![Inline](media/marsh.jpg)").into_string();
+        assert!(html.contains(r#"src="/media/marsh.jpg""#), "{html}");
+    }
+
+    #[test]
+    fn test_render_link_preserves_fragment_and_scheme() {
+        let anchor = markdown_to_html("[jump](#heading)").into_string();
+        assert!(anchor.contains(r##"href="#heading""##), "{anchor}");
+        assert!(!anchor.contains(r#"href="/#heading""#), "{anchor}");
+
+        let mail = markdown_to_html("[mail](mailto:a@b.example)").into_string();
+        assert!(mail.contains(r#"href="mailto:a@b.example""#), "{mail}");
     }
 
     #[test]
