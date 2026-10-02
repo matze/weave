@@ -5,8 +5,9 @@ use std::hash::{Hash, Hasher};
 use std::sync::LazyLock;
 
 use maud::{Markup, PreEscaped, html};
-use merman::MermaidConfig;
-use merman::render::HeadlessRenderer;
+use merman::render::{RenderOutput, RenderRequest, Renderer, SvgRequest};
+use merman::runtime::RuntimePolicy;
+use merman::{Engine, MermaidConfig, OperationControl};
 use parking_lot::Mutex;
 use pulldown_cmark::{BlockQuoteKind, CodeBlockKind, Event, Options, Parser, Tag as CmarkTag};
 use ratex_layout::layout_options::LayoutOptions;
@@ -763,8 +764,12 @@ impl MermaidTheme {
 
         MermaidConfig::from_value(serde_json::json!({
             "theme": p.base,
-            // merman's defaults are roomy; trim node padding and the fixed actor
-            // box size (width is a minimum and still grows to fit long labels).
+            // Mermaid 12 defaults diagrams to the `neo` look: shadowed, rounded nodes and banded
+            // sequence actors. weave's flat surfaces and the sizing below are tuned for the
+            // pre-Mermaid-12 `classic` look.
+            "look": "classic",
+            // merman's defaults are roomy; trim node padding and the fixed actor box size (width is
+            // a minimum and still grows to fit long labels).
             "flowchart": { "padding": 10 },
             "sequence": { "width": 90, "height": 40, "boxMargin": 8 },
             "themeVariables": serde_json::Value::Object(variables),
@@ -772,19 +777,37 @@ impl MermaidTheme {
     }
 }
 
-/// Render a single Mermaid diagram to SVG for one theme variant. The diagram id
-/// is baked into the SVG element ids and must be unique per diagram on a page to
-/// avoid marker/clip-path collisions.
+/// Render a single Mermaid diagram to SVG for one theme variant. The diagram id is baked into the
+/// SVG element ids and must be unique per diagram on a page to avoid marker/clip-path collisions.
 fn render_mermaid_svg(source: &str, theme: MermaidTheme, key: u64) -> Option<String> {
     let diagram_id = format!("mermaid-{key:x}-{}", theme.id_suffix());
 
-    let svg = HeadlessRenderer::new()
-        .with_diagram_id(&diagram_id)
-        .render_svg_with_site_config_sync(source, theme.config())
-        .ok()
-        .flatten()?;
+    let engine = Engine::new().with_site_config(theme.config());
+    // merman's deterministic default pins the operation clock and local day to the Unix epoch, so
+    // date-aware diagrams (a Gantt `today` marker) would render 1970. Prefer the ambient system
+    // adapters, matching a browser-rendered diagram, and fall back to the deterministic policy when
+    // the host cannot supply them.
+    let engine = match RuntimePolicy::try_native() {
+        Ok(policy) => engine.with_runtime_policy(policy),
+        Err(err) => {
+            tracing::warn!(%err, "mermaid: native runtime unavailable, using deterministic policy");
+            engine
+        }
+    };
 
-    Some(harmonize_colors(fit_svg(&svg), theme))
+    let mut request = SvgRequest::default();
+    request.options.diagram_id = Some(diagram_id);
+
+    let output = Renderer::new()
+        .with_engine(engine)
+        .render(RenderRequest::svg(source, OperationControl::new(), request))
+        .ok()?;
+
+    let RenderOutput::Svg(Some(svg)) = output else {
+        return None;
+    };
+
+    Some(harmonize_colors(fit_svg(svg.svg()), theme))
 }
 
 /// Replace the few light defaults merman hardcodes regardless of `themeVariables`
