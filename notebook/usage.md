@@ -9,7 +9,6 @@ variables. Once built, start the server with:
 ZK_NOTEBOOK_DIR="/path/to/notebook" WEAVE_PASSWORD="secret" cargo run --release
 ```
 
-
 ## User interface
 
 The main interface consists of a sidebar listing all notes and a content area
@@ -28,7 +27,7 @@ disabled entirely.
 
 ### Searching
 
-Press <kbd>s</kbd> or click the "Filter notes..." box to search. Weave uses
+Press <kbd>/</kbd> or click the "Filter notes..." box to search. Weave uses
 fuzzy matching against note titles, so you do not need to type the exact title.
 Prefix a word with `#` to filter by tag instead, e.g. `#public`. To leave the
 search bar, press <kbd>esc</kbd>.
@@ -52,14 +51,13 @@ previous note.
 For a distraction-free reading experience enable focus mode with the
 <kbd>f</kbd> key.
 
-
 ## Attachments
 
 If your notebook contains images or other files in a subdirectory, set
 `WEAVE_ATTACHMENTS` to that subdirectory so Weave serves them. For example, with
 a layout like:
 
-```
+```text
 notebook/
   note.md
   media/
@@ -70,6 +68,5 @@ Start Weave with `WEAVE_ATTACHMENTS=media` and reference the image from a note
 as `![photo](media/photo.jpg)`. Weave makes relative image paths root-absolute
 so they resolve correctly regardless of the page URL. Nested paths like
 `WEAVE_ATTACHMENTS=assets/img` work as well.
-
 
 #public
