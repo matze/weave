@@ -16,6 +16,7 @@ and this project adheres to
 ### Changed
 
 - Disable login form when login password is not set.
+- Replace the favicon with gradient-colored threads.
 
 ### Fixed
 
