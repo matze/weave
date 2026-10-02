@@ -8,6 +8,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.2.0]
+
 ### Added
 
 - Render LaTeX math (`$…$` and `$$…$$`) as server-rendered SVG via RaTeX. Math
