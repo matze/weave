@@ -8,6 +8,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.2.1]
+
 ### Fixed
 
 - Show mobile search results while searching and allow dismissing the search
