@@ -282,6 +282,27 @@ body:not([data-note]) #mode-segctl { display: none; }
   border-radius: 4px;
   pointer-events: none;
 }
+/* Touch devices have no Escape key, so while the search field is in use they
+   get an explicit control to return to the note. Revealed on mobile only. */
+.search-clear {
+  display: none;
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  align-items: center;
+  justify-content: center;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 8px;
+  cursor: pointer;
+  line-height: 0;
+}
+.search-clear:hover { color: var(--fg); }
+.search-clear:hover .icon { stroke-width: 2.5; }
+.search-clear .icon { width: 14px; height: 14px; display: block; }
 
 /* ── Sidebar ──────────────────────────────────────────────────────────── */
 .sidebar {
@@ -953,6 +974,12 @@ body:not([data-note]) #mode-segctl { display: none; }
   .body-grid { grid-template-columns: 1fr; }
   body[data-note] .sidebar { display: none; }
   body:not([data-note]) .main { display: none; }
+  /* Using the search field re-reveals the results on top of the selected note.
+     Declared after the data-note rules so it wins at equal specificity. */
+  body[data-searching] .sidebar { display: flex; }
+  body[data-searching] .main { display: none; }
+  body[data-searching] .search-clear { display: flex; }
+  body[data-searching] .search input { padding-right: 36px; }
   .note-head { padding: 24px 24px 0; }
   .note-body { padding: 16px 24px 64px; }
   .editor-input { padding: 16px 24px; }

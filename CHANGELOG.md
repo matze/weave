@@ -8,6 +8,11 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Fixed
+
+- Show mobile search results while searching and allow dismissing the search
+  with a tap.
+
 ## [0.2.0]
 
 ### Added

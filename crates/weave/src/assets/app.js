@@ -57,6 +57,7 @@ function showNote(e) {
         e.currentTarget.classList.add('is-active');
         document.body.dataset.note = '1';
     }
+    exitSearch();
 }
 
 function showList() { delete document.body.dataset.note; }
@@ -254,12 +255,29 @@ function focusSearch() {
     if (i) { i.focus(); i.select(); }
 }
 
+// On mobile a selected note replaces the search results. Mark the body while
+// the search field is in use so the results stay visible on top of the note;
+// picking a note or dismissing the field (Escape) clears it again.
+function enterSearch() { document.body.setAttribute('data-searching', ''); }
+
+function exitSearch() { document.body.removeAttribute('data-searching'); }
+
+// Leave the search field: clear the query and refresh the list, hide the
+// keyboard, and (on mobile) return to the note that was open before searching.
+function dismissSearch() {
+    var i = document.getElementById('filter-input');
+    if (i && i.value) { clearSearch(); return; }
+    if (i) i.blur();
+    exitSearch();
+}
+
 function clearSearch() {
     var i = document.getElementById('filter-input');
     if (!i) return;
     i.value = '';
     htmx.ajax('POST', '/f/search', { target: '#search-list', values: { query: '' } });
     i.blur();
+    exitSearch();
 }
 
 // ── mode toggle (Read / Edit) ─────────────────────────────────────────────
@@ -300,7 +318,10 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         if (clipOpen()) { closeClip(); return; }
         var fi = document.getElementById('filter-input');
-        if (fi && fi.value) { clearSearch(); return; }
+        if (fi && (fi.value || document.body.hasAttribute('data-searching'))) {
+            dismissSearch();
+            return;
+        }
         if (document.querySelector('.shell.is-focus')) { exitFocus(); return; }
         if (inInput) { t.blur(); return; }
         return;
@@ -363,6 +384,7 @@ document.addEventListener('click', function(e) {
 
     if (e.target.closest('#clip-toggle')) { openClip(); }
     else if (e.target.closest('#clip-cancel')) { closeClip(); }
+    else if (e.target.closest('#search-clear')) { dismissSearch(); }
     else if (e.target.closest('#theme-toggle')) { toggleTheme(); }
     else if (e.target.closest('#mode-segctl')) {
         var m = currentMode();
@@ -377,6 +399,8 @@ document.addEventListener('DOMContentLoaded', function() {
     var persisted = null;
     try { persisted = localStorage.getItem('focus'); } catch (e) {}
     if (persisted) enterFocus();
+    var filter = document.getElementById('filter-input');
+    if (filter) filter.addEventListener('focus', enterSearch);
     syncView(true);
     initTocSpy();
 });

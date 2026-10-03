@@ -1,4 +1,4 @@
-use maud::{Markup, html};
+use maud::{html, Markup};
 
 // Lucide-style stroke icons. 24x24 viewBox, currentColor stroke, 14px display.
 
@@ -42,6 +42,10 @@ pub(crate) fn eye() -> Markup {
 
 pub(crate) fn search() -> Markup {
     icon(&["M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z", "M21 21l-4.35-4.35"])
+}
+
+pub(crate) fn x() -> Markup {
+    icon(&["M18 6 6 18", "M6 6l12 12"])
 }
 
 pub(crate) fn link() -> Markup {

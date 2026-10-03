@@ -44,6 +44,10 @@ pub(crate) fn layout(
                                 hx-swap="innerHTML"
                                 {}
                             span class="search-kbd" { "/" }
+                            button type="button" class="search-clear" #search-clear
+                                aria-label="Close search" title="Close search" {
+                                (assets::icons::x())
+                            }
                         }
                     }
 
