@@ -12,6 +12,8 @@ and this project adheres to
 
 - Show mobile search results while searching and allow dismissing the search
   with a tap.
+- Instead of the misleading "note could not be loaded" explain that signing in
+  is required when a signed-out visitor tries to edit a public note.
 
 ## [0.2.0]
 

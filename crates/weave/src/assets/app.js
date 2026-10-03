@@ -460,8 +460,11 @@ document.addEventListener('htmx:afterSettle', function(e) {
 function showNoteError(message) {
     var nc = document.getElementById('note-content');
     if (!nc) return;
+    // The wrapper keeps the message a single flex item: .note-empty is a flex
+    // container, and whitespace at the edges of anonymous flex items (the text
+    // runs around any inline <a>) is stripped, which would drop the spaces.
     nc.innerHTML =
-        '<article class="note"><div class="note-empty">' + message + '</div></article>';
+        '<article class="note"><div class="note-empty"><span>' + message + '</span></div></article>';
 }
 
 document.addEventListener('htmx:sendError', function(e) {
@@ -472,6 +475,13 @@ document.addEventListener('htmx:sendError', function(e) {
 
 document.addEventListener('htmx:responseError', function(e) {
     if (e.detail.target && e.detail.target.id === 'note-content') {
+        // A 403 from a note endpoint means the session is missing, not that the
+        // note is broken: the note itself loaded fine. Point at sign-in instead
+        // of the generic load-failure text.
+        if (e.detail.xhr.status === 403) {
+            showNoteError('You need to <a href="/login">sign in</a> to edit notes');
+            return;
+        }
         showNoteError('note could not be loaded');
     }
 });
