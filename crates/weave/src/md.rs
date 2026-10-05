@@ -48,7 +48,8 @@ static SPLITTER_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
 });
 
 static WIKI_LINK_RE: LazyLock<regex::Regex> = LazyLock::new(|| {
-    regex::Regex::new(r"^(?:\.{0,2}/)*(?P<stem>[\w-]+)$").expect("compiling regex")
+    regex::Regex::new(r"^(?:\.{0,2}/)*(?P<stem>[\w-]+)(?:#(?P<anchor>[^#\s]+))?$")
+        .expect("compiling regex")
 });
 
 static SYNTAX_SET: LazyLock<SyntaxSet> = LazyLock::new(two_face::syntax::extra_newlines);
@@ -139,7 +140,10 @@ enum MdTag {
     Emphasis,
     Strong,
     Strikethrough,
-    WikiLink(String),
+    WikiLink {
+        stem: String,
+        anchor: Option<String>,
+    },
     ExternalLink(String),
     Table,
     TableHead,
@@ -192,7 +196,10 @@ fn build_tree(parser: Parser) -> MdNode {
                     CmarkTag::Strikethrough => MdTag::Strikethrough,
                     CmarkTag::Link { dest_url, .. } => {
                         if let Some(caps) = WIKI_LINK_RE.captures(&dest_url) {
-                            MdTag::WikiLink(caps["stem"].to_string())
+                            MdTag::WikiLink {
+                                stem: caps["stem"].to_string(),
+                                anchor: caps.name("anchor").map(|m| m.as_str().to_string()),
+                            }
                         } else {
                             MdTag::ExternalLink(dest_url.to_string())
                         }
@@ -233,7 +240,7 @@ fn build_tree(parser: Parser) -> MdNode {
                 let suppress_splitter = stack.iter().any(|(tag, _)| {
                     matches!(
                         tag,
-                        MdTag::CodeBlock(_) | MdTag::WikiLink(_) | MdTag::ExternalLink(_)
+                        MdTag::CodeBlock(_) | MdTag::WikiLink { .. } | MdTag::ExternalLink(_)
                     )
                 });
                 let node = if suppress_splitter {
@@ -438,13 +445,19 @@ fn render_node(node: &MdNode) -> Markup {
             MdTag::Emphasis => html! { em { (render_children(children)) } },
             MdTag::Strong => html! { strong { (render_children(children)) } },
             MdTag::Strikethrough => html! { del { (render_children(children)) } },
-            MdTag::WikiLink(url) => html! {
-                a href="#" class="md-wikilink"
-                    hx-get={ "/f/" (url) }
-                    hx-target="#note-content"
-                    hx-push-url={ "/note/" (url) }
-                { (render_children(children)) }
-            },
+            MdTag::WikiLink { stem, anchor } => {
+                let push_url = match anchor {
+                    Some(anchor) => format!("/note/{stem}#{anchor}"),
+                    None => format!("/note/{stem}"),
+                };
+                html! {
+                    a href="#" class="md-wikilink"
+                        hx-get={ "/f/" (stem) }
+                        hx-target="#note-content"
+                        hx-push-url=(push_url)
+                    { (render_children(children)) }
+                }
+            }
             MdTag::ExternalLink(url) => {
                 let href = resolve_url(url);
                 html! {
@@ -1021,7 +1034,26 @@ mod tests {
     }
 
     #[test]
-    fn test_render_external_link() {
+    fn test_render_wiki_link_with_heading_anchor() {
+        let html = markdown_to_html("[jump](my-note#some-heading)").into_string();
+        assert!(html.contains(r#"hx-get="/f/my-note""#), "{html}");
+        assert!(
+            html.contains(r#"hx-push-url="/note/my-note#some-heading""#),
+            "{html}"
+        );
+        assert!(html.contains("jump"));
+        assert!(!html.contains("md-ext-icon"), "{html}");
+    }
+
+    #[test]
+    fn test_render_wiki_link_anchor_with_relative_prefix() {
+        let html = markdown_to_html("[jump](../65bs#intro)").into_string();
+        assert!(html.contains(r#"hx-get="/f/65bs""#), "{html}");
+        assert!(html.contains(r#"hx-push-url="/note/65bs#intro""#), "{html}");
+    }
+
+    #[test]
+    fn test_render_external_link_is_not_wikilink() {
         let html = markdown_to_html("[site](https://example.com)").into_string();
         assert!(html.contains(r#"href="https://example.com""#), "{html}");
         assert!(!html.contains("hx-get"), "{html}");

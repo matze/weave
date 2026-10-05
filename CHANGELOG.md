@@ -8,6 +8,10 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- Link to a heading inside another note with `[label](note#heading)`.
+
 ## [0.2.1]
 
 ### Fixed

@@ -363,6 +363,9 @@ fn extract_hashtags(line: &str, tags: &mut Vec<String>) {
 /// Check if a markdown link URL is a wiki-link (bare stem or ./stem or ../stem).
 /// Mirrors the WIKI_LINK_RE pattern in weave/src/md.rs.
 fn wiki_link_stem(url: &str) -> Option<&str> {
+    // A heading fragment (`note#section`) targets the note. Only the stem is stored so
+    // backlinks/outgoing links resolve to the note.
+    let url = url.split('#').next().unwrap_or(url);
     let mut rest = url;
     loop {
         if rest.starts_with("../") {
@@ -671,6 +674,20 @@ mod tests {
         let body = "See [note one](abc) and [note two](./def).";
         let stems = extract_wiki_link_stems(body);
         assert_eq!(stems, vec!["abc", "def"]);
+    }
+
+    #[test]
+    fn test_wiki_link_stem_with_fragment() {
+        assert_eq!(wiki_link_stem("abc123#section"), Some("abc123"));
+        assert_eq!(wiki_link_stem("./my-note#a-b"), Some("my-note"));
+        assert_eq!(wiki_link_stem("../my-note#step-1-setup"), Some("my-note"));
+    }
+
+    #[test]
+    fn test_extract_wiki_link_stems_with_fragments() {
+        let body = "See [one](abc1#intro) and [two](../def2#part).";
+        let stems = extract_wiki_link_stems(body);
+        assert_eq!(stems, vec!["abc1", "def2"]);
     }
 
     #[test]

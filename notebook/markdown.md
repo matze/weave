@@ -178,6 +178,11 @@ Internal links to other notes use the destination note's filename stem:
 Relative paths such as `./usage` or `../usage` are accepted and resolve to the
 same note.
 
+Append `#heading-anchor` to link to a section inside another note. The target
+note loads and the reader scrolls to that heading:
+
+- [Installation: Running](installation#running)
+
 ## Tags
 
 Zk uses [tags][] to group and find notes of a related topic. Two inline styles
