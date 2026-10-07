@@ -8,6 +8,11 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- Build a container image for `x86_64` and `aarch64` from a scratch base with
+  the bundled `Dockerfile` and `build-docker-image.sh`.
+
 ## [0.2.2]
 
 ### Added
