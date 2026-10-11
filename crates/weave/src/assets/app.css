@@ -664,7 +664,15 @@ body:not([data-note]) #mode-segctl { display: none; }
   border-bottom: 2px solid var(--accent-fg);
   transform: rotate(45deg);
 }
-.md li:has(> input[type="checkbox"]) { list-style: none; }
+.md li:has(> input[type="checkbox"]),
+.md li:has(> p > input[type="checkbox"]) {
+  list-style: none;
+}
+.md li > input[type="checkbox"],
+.md li > p > input[type="checkbox"] {
+  float: left;
+  margin: 0.45em 0 0.2em -1.6em;
+}
 
 .md table {
   width: calc(100% + 28px);  /* bleed cell padding into both gutters so text aligns */
