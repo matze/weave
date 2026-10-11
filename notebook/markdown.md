@@ -44,6 +44,21 @@ Ordered lists use numbers:
 2. Point it at a notebook
 3. Open the browser
 
+Append `[ ]` or `[x]` to `-`, `*` or number for unchecked or checked task list items:
+
+- [ ] Unchecked task list item
+- [x] Checked task list item
+  - [ ] Unchecked Subtask
+  - [x] Checked subtask
+
+- Unordered list with nested, ordered task list
+  1. [ ] Nested, unchecked item
+  2. [x] Nested, checked item
+
+1. Ordered list with nested, unordered task list
+  - [ ] Nested, unchecked item
+  - [x] Nested, checked item
+
 ## Blockquotes
 
 > A regular blockquote is rendered with a thin accent bar and slightly muted
