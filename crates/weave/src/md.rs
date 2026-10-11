@@ -166,6 +166,7 @@ enum MdNode {
     SoftBreak,
     HardBreak,
     Rule,
+    TaskListMarker(bool),
 }
 
 fn build_tree(parser: Parser) -> MdNode {
@@ -281,6 +282,7 @@ fn build_tree(parser: Parser) -> MdNode {
             Event::SoftBreak => stack.last_mut().unwrap().1.push(MdNode::SoftBreak),
             Event::HardBreak => stack.last_mut().unwrap().1.push(MdNode::HardBreak),
             Event::Rule => stack.last_mut().unwrap().1.push(MdNode::Rule),
+            Event::TaskListMarker(bool) => stack.last_mut().unwrap().1.push(MdNode::TaskListMarker(bool)),
             _ => {}
         }
     }
@@ -512,6 +514,8 @@ fn render_node(node: &MdNode) -> Markup {
         MdNode::SoftBreak => PreEscaped("\n".to_owned()),
         MdNode::HardBreak => html! { br; },
         MdNode::Rule => html! { hr; },
+        MdNode::TaskListMarker(true) => html! { input aria-required="false" aria-invalid="false" type="checkbox" checked="true" aria-checked="true" disabled="true"; },
+        MdNode::TaskListMarker(false) => html! { input aria-required="false" aria-invalid="false" type="checkbox" aria-checked="false" disabled="true"; },
     }
 }
 
@@ -896,6 +900,7 @@ fn parser_options() -> Options {
         | Options::ENABLE_SMART_PUNCTUATION
         | Options::ENABLE_GFM
         | Options::ENABLE_MATH
+        | Options::ENABLE_TASKLISTS
 }
 
 pub fn markdown_to_html(source: &str) -> Markup {
