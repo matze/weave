@@ -458,10 +458,7 @@ body:not([data-note]) #mode-segctl { display: none; }
 }
 .note-nav-section { margin-bottom: 24px; }
 .note-nav-title {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-family: var(--font-body);
   color: var(--muted);
   margin: 0 0 8px;
   font-weight: 600;
