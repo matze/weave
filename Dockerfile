@@ -5,17 +5,11 @@
 # that this is to be used from an x86_64 host.
 #
 # The final images are based on scratch and contain the statically linked
-# `weave` binary and nothing else. They carry no CA store, so the URL clipper
-# needs the host's mounted, e.g. `-v /etc/ssl/certs:/etc/ssl/certs:ro`.
+# `weave` binary and nothing else.
 
 # --- build image
 
 FROM rust:1.95 AS builder
-
-# rustls uses the aws-lc-rs provider, whose C sources are built with CMake.
-RUN apt-get update && \
-    apt-get install --yes --no-install-recommends cmake && \
-    rm -rf /var/lib/apt/lists/*
 
 RUN rustup target add \
     aarch64-unknown-linux-musl \

@@ -219,35 +219,6 @@ function toggleTheme() {
     applyTheme(currentTheme() === 'dark' ? 'light' : 'dark', true);
 }
 
-// ── clip drawer ───────────────────────────────────────────────────────────
-
-function clearClipStatus() {
-    var s = document.getElementById('clip-status');
-    if (s) s.innerHTML = '';
-}
-
-function openClip() {
-    var d = document.getElementById('clip-drawer');
-    if (!d) return;
-    clearClipStatus();
-    d.classList.add('is-open');
-    var i = document.getElementById('clip-input');
-    if (i) i.focus();
-}
-
-function closeClip() {
-    var d = document.getElementById('clip-drawer');
-    if (!d) return;
-    d.classList.remove('is-open');
-    var i = document.getElementById('clip-input');
-    if (i) { i.value = ''; i.blur(); }
-}
-
-function clipOpen() {
-    var d = document.getElementById('clip-drawer');
-    return !!(d && d.classList.contains('is-open'));
-}
-
 // ── search ────────────────────────────────────────────────────────────────
 
 function focusSearch() {
@@ -316,7 +287,6 @@ document.addEventListener('keydown', function(e) {
     var mod = e.ctrlKey || e.metaKey || e.altKey;
 
     if (e.key === 'Escape') {
-        if (clipOpen()) { closeClip(); return; }
         var fi = document.getElementById('filter-input');
         if (fi && (fi.value || document.body.hasAttribute('data-searching'))) {
             dismissSearch();
@@ -351,11 +321,6 @@ document.addEventListener('keydown', function(e) {
         case 'f': e.preventDefault(); toggleFocus(); return;
         case 'r': e.preventDefault(); openRaw(); return;
         case 'd': e.preventDefault(); toggleTheme(); return;
-        case 'c': {
-            var clipBtn = document.getElementById('clip-toggle');
-            if (clipBtn) { e.preventDefault(); openClip(); }
-            return;
-        }
         case 'n': {
             var newBtn = document.getElementById('new-note');
             if (newBtn) { e.preventDefault(); newBtn.click(); }
@@ -382,9 +347,7 @@ document.addEventListener('click', function(e) {
     var heading = e.target.closest('.md h1, .md h2, .md h3, .md h4, .md h5, .md h6');
     if (heading && heading.id && !e.target.closest('a')) { gotoHeading(e, heading.id); return; }
 
-    if (e.target.closest('#clip-toggle')) { openClip(); }
-    else if (e.target.closest('#clip-cancel')) { closeClip(); }
-    else if (e.target.closest('#search-clear')) { dismissSearch(); }
+    if (e.target.closest('#search-clear')) { dismissSearch(); }
     else if (e.target.closest('#theme-toggle')) { toggleTheme(); }
     else if (e.target.closest('#mode-segctl')) {
         var m = currentMode();
@@ -421,32 +384,6 @@ window.addEventListener('popstate', function() {
 
 document.addEventListener('htmx:historyRestore', function() {
     syncView(true);
-});
-
-// Clear the previous result the moment a new clip starts, so the spinner is
-// the only thing on screen while the request is in flight.
-document.addEventListener('htmx:beforeRequest', function(e) {
-    if (e.detail.elt && e.detail.elt.id === 'clip-form') clearClipStatus();
-});
-
-// HTMX skips swapping for non-2xx responses by default; allow the error
-// fragment from /clip to land in the status region so the reason is shown.
-document.addEventListener('htmx:beforeSwap', function(e) {
-    if (e.detail.target && e.detail.target.id === 'clip-status' && e.detail.xhr.status >= 400) {
-        e.detail.shouldSwap = true;
-        e.detail.isError = false;
-    }
-});
-
-document.addEventListener('htmx:afterRequest', function(e) {
-    if (!e.detail.elt || e.detail.elt.id !== 'clip-form') return;
-    if (!e.detail.successful) return;
-    // Success: the new note shows up via SSE. Clear the field and close the
-    // drawer after a beat so the confirmation is readable. Errors keep the
-    // drawer open so the URL can be fixed and retried.
-    var i = document.getElementById('clip-input');
-    if (i) i.value = '';
-    setTimeout(closeClip, 1200);
 });
 
 document.addEventListener('htmx:afterSettle', function(e) {

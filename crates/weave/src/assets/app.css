@@ -802,108 +802,10 @@ body:not([data-note]) #mode-segctl { display: none; }
 }
 .btn-primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
 .btn-primary:hover { filter: brightness(1.05); }
-.btn-ghost {
-  background: transparent;
-  color: var(--fg-soft);
-  border-color: var(--border-strong);
-}
-.btn-ghost:hover { background: var(--bg-soft); color: var(--fg); }
-
-/* ── Clip drawer ──────────────────────────────────────────────────────── */
-.clip-drawer {
-  position: absolute;
-  top: var(--top-h);
-  left: 0;
-  right: 0;
-  background: var(--bg-elev);
-  border-bottom: 1px solid transparent;
-  z-index: 15;
-  padding: 18px 24px 20px;
-  transform: translateY(-100%);
-  transition: transform var(--transition), box-shadow var(--transition);
-  pointer-events: none;
-}
-.clip-drawer.is-open {
-  transform: translateY(0);
-  border-bottom-color: var(--border);
-  box-shadow: var(--shadow-pop);
-  pointer-events: auto;
-}
-.clip-drawer h3 {
-  margin: 0 0 12px;
-  font-family: var(--font-ui);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.clip-drawer .clip-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.clip-drawer input {
-  flex: 1;
-  height: 38px;
-  padding: 0 14px;
-  font-family: var(--font-mono);
-  font-size: 13.5px;
-  border: 1px solid var(--border-strong);
-  background: var(--bg);
-  color: var(--fg);
-  border-radius: var(--radius-sm);
-  outline: none;
-}
-.clip-drawer input:focus { border-color: var(--accent); }
-.clip-drawer .btn { height: 38px; }
-.clip-drawer .btn[disabled] { opacity: 0.55; cursor: default; pointer-events: none; }
-
-.clip-foot {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 20px;
-  margin-top: 10px;
-}
-
-/* htmx adds `htmx-request` to the indicator element while a clip is in flight. */
-.clip-spinner {
-  display: none;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--font-ui);
-  font-size: 12.5px;
-  color: var(--muted);
-}
-.clip-spinner.htmx-request { display: inline-flex; }
-
-.spinner {
-  width: 13px;
-  height: 13px;
-  border: 2px solid var(--border-strong);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: clip-spin 0.6s linear infinite;
-}
-
-@keyframes clip-spin { to { transform: rotate(360deg); } }
-
-.clip-msg {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--font-ui);
-  font-size: 12.5px;
-}
-.clip-msg .icon { flex: none; }
-.clip-msg.is-ok  { color: var(--accent); }
-.clip-msg.is-err { color: var(--danger); }
 
 /* ── Focus mode ───────────────────────────────────────────────────────── */
 .shell.is-focus .topbar  { transform: translateY(-100%); opacity: 0; pointer-events: none; }
 .shell.is-focus .sidebar { transform: translateX(-100%); opacity: 0; pointer-events: none; }
-.shell.is-focus .clip-drawer { display: none; }
 
 /* ── Login ────────────────────────────────────────────────────────────── */
 .login {

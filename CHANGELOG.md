@@ -13,6 +13,11 @@ and this project adheres to
 - Build a container image for `x86_64` and `aarch64` from a scratch base with
   the bundled `Dockerfile` and `build-docker-image.sh`.
 
+### Removed
+
+- **Breaking**: The URL clipping feature, including the `C` shortcut, the
+  `/clip` route and the `Clip` button in the top bar.
+
 ## [0.2.2]
 
 ### Added

@@ -63,10 +63,6 @@ pub(crate) fn layout(
                             }
                         }
                         @if authenticated {
-                            button type="button" class="tb-btn" #clip-toggle
-                                title="Clip URL (C)" aria-label="Clip URL" {
-                                (assets::icons::link())
-                            }
                             button type="button" class="tb-btn" #new-note
                                 title="New note (N)" aria-label="New note"
                                 hx-post="/note"
@@ -88,33 +84,6 @@ pub(crate) fn layout(
                                     (assets::icons::sign_in())
                                 }
                             }
-                        }
-                    }
-                }
-
-                @if authenticated {
-                    div class="clip-drawer" #clip-drawer {
-                        h3 { "Clip a URL" }
-                        form class="clip-row" #clip-form
-                            hx-post="/clip"
-                            hx-target="#clip-status"
-                            hx-swap="innerHTML"
-                            hx-indicator="#clip-spinner"
-                            hx-disabled-elt="#clip-submit" {
-                            input #clip-input type="url" name="url"
-                                placeholder="https://…" required {}
-                            button type="submit" class="btn btn-primary" #clip-submit {
-                                "Clip"
-                            }
-                            button type="button" class="btn btn-ghost" #clip-cancel {
-                                "Cancel"
-                            }
-                        }
-                        div class="clip-foot" {
-                            span class="clip-spinner" #clip-spinner aria-hidden="true" {
-                                span class="spinner" {} "Clipping…"
-                            }
-                            div class="clip-status" #clip-status role="status" aria-live="polite" {}
                         }
                     }
                 }
@@ -158,9 +127,7 @@ fn welcome(authenticated: bool) -> Markup {
                 @if authenticated {
                     ", "
                     span class="kbd" { "N" }
-                    " for a new note, "
-                    span class="kbd" { "C" }
-                    " to clip a URL"
+                    " for a new note"
                 }
                 ", "
                 span class="kbd" { "D" }

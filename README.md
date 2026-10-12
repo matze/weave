@@ -60,13 +60,10 @@ ZK_NOTEBOOK_DIR="$(pwd)/notebook" WEAVE_ATTACHMENTS="media" cargo run --release
 Pre-built images for `x86_64` and `aarch64` are published to
 `quxfoo/weave:<VERSION>` and `quxfoo/weave:latest`. The final image is based on
 [scratch](https://hub.docker.com/_/scratch) and holds the statically linked
-`weave` binary. The notebook and the certificate store must be mounted
-from the host.
+`weave` binary. The notebook must be mounted from the host.
 
 Mount the notebook at `/notebook`, which is the image's default
-`ZK_NOTEBOOK_DIR`, and make sure user `10001` can write to it. Mount the host's
-certificate store as well, otherwise clipping a URL fails with `502 Could not
-reach the page`.
+`ZK_NOTEBOOK_DIR`, and make sure user `10001` can write to it.
 
 ```bash
 docker run \
@@ -74,14 +71,8 @@ docker run \
     -e WEAVE_PASSWORD=secret \
     -e WEAVE_ATTACHMENTS=media \
     -v /path/to/notebook:/notebook \
-    -v /etc/ssl/certs:/etc/ssl/certs:ro \
     quxfoo/weave:latest
 ```
-
-The certificate store only matters for the URL clipper. Every other route works
-without it. Any path the Rust TLS stack probes by default is fine, so
-`/etc/pki/tls/certs` or `/etc/ssl/cert.pem` on non-Debian hosts work the same
-way.
 
 ### Build a container image
 
