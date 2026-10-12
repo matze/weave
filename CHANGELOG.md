@@ -8,6 +8,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.3.0]
+
 ### Added
 
 - Build a container image for `x86_64` and `aarch64` from a scratch base with
