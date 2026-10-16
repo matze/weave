@@ -1,4 +1,4 @@
-use maud::{html, Markup};
+use maud::{Markup, html};
 
 // Lucide-style stroke icons. 24x24 viewBox, currentColor stroke, 14px display.
 

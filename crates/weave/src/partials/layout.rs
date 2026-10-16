@@ -1,7 +1,7 @@
-use maud::{html, Markup, DOCTYPE};
+use maud::{DOCTYPE, Markup, html};
 
 use crate::partials;
-use crate::{assets, Notebook};
+use crate::{Notebook, assets};
 
 /// Render the main page layout.
 ///
