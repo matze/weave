@@ -34,6 +34,6 @@ pub(crate) async fn highlight_css() -> impl IntoResponse {
 pub(crate) async fn htmx_js() -> impl IntoResponse {
     (
         [(header::CONTENT_TYPE, "text/javascript")],
-        include_str!("htmx.2.0.4.min.js"),
+        include_str!("htmx.2.0.11.min.js"),
     )
 }

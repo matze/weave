@@ -310,7 +310,7 @@ async fn main() -> Result<()> {
         .route("/app.js", get(assets::app_js))
         .route("/favicon.svg", get(assets::favicon))
         .route("/highlight.css", get(assets::highlight_css))
-        .route("/htmx.2.0.4.min.js", get(assets::htmx_js))
+        .route("/htmx.2.0.11.min.js", get(assets::htmx_js))
         .with_state(state);
 
     if let Some((url_path, fs_path)) = attachments {

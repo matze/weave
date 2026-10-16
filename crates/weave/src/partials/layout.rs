@@ -1,7 +1,7 @@
-use maud::{DOCTYPE, Markup, html};
+use maud::{html, Markup, DOCTYPE};
 
 use crate::partials;
-use crate::{Notebook, assets};
+use crate::{assets, Notebook};
 
 /// Render the main page layout.
 ///
@@ -106,7 +106,7 @@ pub(crate) fn layout(
 
               }
 
-                script src="/htmx.2.0.4.min.js" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" {}
+                script src="/htmx.2.0.11.min.js" integrity="sha384-2OatzQy1H+Zd/IIrjr1TcuDGqLXeHhbooAyJY1KdQMKnr4LZ22k31GBLdYKHmVjg" {}
                 script src="/app.js" {}
             }
         }
