@@ -150,7 +150,10 @@ enum MdTag {
     TableRow,
     TableHeadCell,
     TableBodyCell,
-    Image { url: String, title: String },
+    Image {
+        url: String,
+        title: String,
+    },
 }
 
 enum MdNode {
@@ -282,7 +285,11 @@ fn build_tree(parser: Parser) -> MdNode {
             Event::SoftBreak => stack.last_mut().unwrap().1.push(MdNode::SoftBreak),
             Event::HardBreak => stack.last_mut().unwrap().1.push(MdNode::HardBreak),
             Event::Rule => stack.last_mut().unwrap().1.push(MdNode::Rule),
-            Event::TaskListMarker(bool) => stack.last_mut().unwrap().1.push(MdNode::TaskListMarker(bool)),
+            Event::TaskListMarker(bool) => stack
+                .last_mut()
+                .unwrap()
+                .1
+                .push(MdNode::TaskListMarker(bool)),
             _ => {}
         }
     }
@@ -514,8 +521,12 @@ fn render_node(node: &MdNode) -> Markup {
         MdNode::SoftBreak => PreEscaped("\n".to_owned()),
         MdNode::HardBreak => html! { br; },
         MdNode::Rule => html! { hr; },
-        MdNode::TaskListMarker(true) => html! { input aria-required="false" aria-invalid="false" type="checkbox" checked="true" aria-checked="true" disabled="true"; },
-        MdNode::TaskListMarker(false) => html! { input aria-required="false" aria-invalid="false" type="checkbox" aria-checked="false" disabled="true"; },
+        MdNode::TaskListMarker(true) => {
+            html! { input aria-required="false" aria-invalid="false" type="checkbox" checked="true" aria-checked="true" disabled="true"; }
+        }
+        MdNode::TaskListMarker(false) => {
+            html! { input aria-required="false" aria-invalid="false" type="checkbox" aria-checked="false" disabled="true"; }
+        }
     }
 }
 
@@ -875,8 +886,9 @@ fn harmonize_colors(svg: String, theme: MermaidTheme) -> String {
 /// `max-width` cap, which downscales wide diagrams and shrinks their text below
 /// the surrounding prose. Pinning the width keeps text at the configured size;
 /// the `.mermaid` container scrolls horizontally when a diagram is too wide.
-/// Also drops the hardcoded white background so the diagram inherits the note
-/// surface. Only the opening tag is touched, so `foreignObject` `max-width`
+/// The root carries no `background-color` (merman only emits one when a root
+/// background is requested, which weave does not), so the diagram inherits the
+/// note surface. Only the opening tag is touched, so `foreignObject` `max-width`
 /// label caps are left intact.
 fn fit_svg(svg: &str) -> String {
     let Some(end) = svg.find('>') else {
@@ -886,8 +898,7 @@ fn fit_svg(svg: &str) -> String {
 
     let open_tag = open_tag
         .replace(" width=\"100%\"", "")
-        .replace("max-width:", "width:")
-        .replace("background-color: white", "background-color: transparent");
+        .replace("max-width:", "width:");
 
     format!("{open_tag}{rest}")
 }

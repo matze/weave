@@ -11,6 +11,7 @@ and this project adheres to
 ### Changed
 
 - Update the bundled htmx from `2.0.4` to `2.0.11`.
+- Update `merman` from `0.8.0-alpha.7` to `0.9`.
 
 ## [0.3.0]
 
