@@ -8,6 +8,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.4.0]
+
 ### Changed
 
 - Update the bundled htmx from `2.0.4` to `2.0.11`.
