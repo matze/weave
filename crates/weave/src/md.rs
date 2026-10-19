@@ -487,10 +487,12 @@ fn render_node(node: &MdNode) -> Markup {
                     }
                 }
                 html! {
-                    table {
-                        (head)
-                        tbody {
-                            @for row in body_rows { (render_node(row)) }
+                    div class="md-table" {
+                        table {
+                            (head)
+                            tbody {
+                                @for row in body_rows { (render_node(row)) }
+                            }
                         }
                     }
                 }

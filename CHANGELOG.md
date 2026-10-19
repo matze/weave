@@ -12,6 +12,8 @@ and this project adheres to
 
 - Update the bundled htmx from `2.0.4` to `2.0.11`.
 - Update `merman` from `0.8.0-alpha.7` to `0.9`.
+- Scroll table content instead of the whole page when it overflows. Wasn't an
+  issue on desktop but on mobile.
 
 ## [0.3.0]
 
