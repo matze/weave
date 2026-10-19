@@ -686,6 +686,7 @@ body:not([data-note]) #mode-segctl { display: none; }
 .md table th, .md table td {
   padding: 8px 14px;
   text-align: left;
+  vertical-align: top;
   border-bottom: 1px solid var(--border);
 }
 .md table th {

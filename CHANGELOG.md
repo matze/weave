@@ -14,6 +14,7 @@ and this project adheres to
 - Update `merman` from `0.8.0-alpha.7` to `0.9`.
 - Scroll table content instead of the whole page when it overflows. Wasn't an
   issue on desktop but on mobile.
+- Top-align cell content.
 
 ## [0.3.0]
 
