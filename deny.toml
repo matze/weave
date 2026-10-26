@@ -6,6 +6,9 @@ allow = [
     "BSD-3-Clause",
     "Unicode-3.0",
     "Zlib",
+    "MPL-2.0",
+    "ISC",
+    "CC0-1.0",
 ]
 
 [licenses.private]
@@ -14,5 +17,16 @@ ignore = true
 [bans]
 multiple-versions = "allow"
 
+[sources]
+allow-git = [
+    "https://github.com/lambda-fairy/maud",
+]
+
 [advisories]
-ignore = []
+ignore = [
+    { id = "RUSTSEC-2025-0141", reason = "bincode unmaintained but complete; only transitive via syntect/two-face" },
+    { id = "RUSTSEC-2026-0387", reason = "fix requires jsonwebtoken EC stack upgrade (p256 0.14+); weave uses EdDSA only, EC code path unused" },
+    { id = "RUSTSEC-2023-0071", reason = "no patch upstream (patched=[] intentional); weave uses EdDSA only, RSA code path unused" },
+    { id = "RUSTSEC-2026-0192", reason = "ttf-parser unmaintained; transitive via ratex-svg font loading, no safe upgrade" },
+    { id = "RUSTSEC-2024-0449", reason = "unsafe-libyaml unmaintained; transitive via serde_yaml in zk-rs, no safe upgrade" },
+]
