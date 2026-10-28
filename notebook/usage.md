@@ -27,9 +27,11 @@ below.
 ### Searching
 
 Press <kbd>/</kbd> or click the "Filter notes..." box to search. Weave uses
-fuzzy matching against note titles, so you do not need to type the exact title.
-Prefix a word with `#` to filter by tag instead, e.g. `#public`. To leave the
-search bar, press <kbd>esc</kbd>.
+fuzzy matching against note titles and tags, and matches note bodies too, so you
+do not need to type the exact title. A strong title or tag match outranks a body
+match, but a strong body match outranks a weak title match. Prefix a word with
+`#` to filter by tag instead, e.g. `#public`. To leave the search bar, press
+<kbd>esc</kbd>.
 
 ### Editing
 

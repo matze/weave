@@ -218,34 +218,82 @@ impl Notebook {
             .unwrap_or_default()
     }
 
-    /// Fuzzy search note titles, returning matches ranked by score.
-    pub fn search_titles(
-        &self,
-        query: &str,
-        with_tag: Option<&str>,
-    ) -> impl Iterator<Item = &Note> {
+    /// Search notes by title, tag, and body.
+    ///
+    /// Each field's raw match score is normalized against a perfect match
+    /// (the query scored against itself) and multiplied by a field weight,
+    /// so a weak fuzzy title match cannot outrank a strong body match while
+    /// still keeping title > tag > body for matches of equal quality.
+    pub fn search(&self, query: &str, with_tag: Option<&str>) -> impl Iterator<Item = &Note> {
         if query.is_empty() {
             return self.all_notes(with_tag).collect::<Vec<_>>().into_iter();
         }
 
+        const W_TITLE: u64 = 10;
+        const W_TAG: u64 = 9;
+        const W_BODY: u64 = 8;
+
         let mut matcher = nucleo::Matcher::new(nucleo::Config::DEFAULT);
-        let needle = nucleo::pattern::Pattern::parse(
+
+        // Fuzzy over short fields (title, tags); contiguous over the body.
+        let fuzzy = nucleo::pattern::Pattern::parse(
             query,
             nucleo::pattern::CaseMatching::Ignore,
             nucleo::pattern::Normalization::Smart,
         );
+        let substring = nucleo::pattern::Pattern::new(
+            query,
+            nucleo::pattern::CaseMatching::Ignore,
+            nucleo::pattern::Normalization::Smart,
+            nucleo::pattern::AtomKind::Substring,
+        );
 
-        let mut scored: Vec<(u32, &Note)> = self
+        // Reference score for a perfect match: the query against itself.
+        let mut buf = Vec::new();
+        let needle = nucleo::Utf32Str::new(query, &mut buf);
+        let ref_fuzzy = fuzzy.score(needle, &mut matcher).unwrap_or(1);
+        let ref_substring = substring.score(needle, &mut matcher).unwrap_or(1);
+
+        let mut scored: Vec<(u64, &Note)> = self
             .all_notes(with_tag)
             .filter_map(|note| {
                 let mut buf = Vec::new();
-                let haystack = nucleo::Utf32Str::new(note.title(), &mut buf);
-                let score = needle.score(haystack, &mut matcher)?;
-                Some((score, note))
+                let mut total = 0u64;
+
+                let title = nucleo::Utf32Str::new(note.title(), &mut buf);
+
+                if let Some(s) = fuzzy.score(title, &mut matcher) {
+                    total += s as u64 * W_TITLE / ref_fuzzy as u64;
+                }
+
+                let best_tag = note
+                    .tags()
+                    .iter()
+                    .filter_map(|tag| {
+                        let haystack = nucleo::Utf32Str::new(tag, &mut buf);
+                        fuzzy.score(haystack, &mut matcher)
+                    })
+                    .max()
+                    .unwrap_or(0);
+
+                if best_tag > 0 {
+                    total += best_tag as u64 * W_TAG / ref_fuzzy as u64;
+                }
+
+                let body = nucleo::Utf32Str::new(note.body(), &mut buf);
+
+                if let Some(s) = substring.score(body, &mut matcher) {
+                    total += s as u64 * W_BODY / ref_substring as u64;
+                }
+
+                (total > 0).then_some((total, note))
             })
             .collect();
 
-        scored.sort_by_key(|b| std::cmp::Reverse(b.0));
+        scored.sort_by(|a, b| {
+            b.0.cmp(&a.0)
+                .then_with(|| b.1.modified().cmp(&a.1.modified()))
+        });
 
         scored
             .into_iter()
@@ -485,7 +533,7 @@ mod tests {
         let dir = setup_notebook();
         let nb = Notebook::load(dir.path()).unwrap();
 
-        let first = nb.search_titles("First", None).next();
+        let first = nb.search("First", None).next();
         assert!(first.is_some());
         assert_eq!(first.unwrap().title(), "First Note");
     }
@@ -495,9 +543,96 @@ mod tests {
         let dir = setup_notebook();
         let nb = Notebook::load(dir.path()).unwrap();
 
-        let results: Vec<&Note> = nb.search_titles("Note", Some("testing")).collect();
+        let results: Vec<&Note> = nb.search("Note", Some("testing")).collect();
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].title(), "First Note");
+    }
+
+    #[test]
+    fn test_search_matches_body() {
+        let dir = setup_notebook();
+        let nb = Notebook::load(dir.path()).unwrap();
+
+        // "paragraph" appears only in note1's body ("Second paragraph.").
+        let results: Vec<&Note> = nb.search("paragraph", None).collect();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].title(), "First Note");
+    }
+
+    #[test]
+    fn test_search_matches_tag() {
+        let dir = setup_notebook();
+        let nb = Notebook::load(dir.path()).unwrap();
+
+        // "testing" is note1's tag; it appears in no title or body.
+        let results: Vec<&Note> = nb.search("testing", None).collect();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].title(), "First Note");
+    }
+
+    #[test]
+    fn test_search_ranks_title_over_body() {
+        let dir = setup_notebook();
+        let nb = Notebook::load(dir.path()).unwrap();
+
+        // "Second" matches note2's title and note1's body.
+        let results: Vec<&Note> = nb.search("Second", None).collect();
+        assert!(results.len() >= 2);
+        assert_eq!(results[0].title(), "Second Note");
+        assert!(results.iter().any(|n| n.title() == "First Note"));
+    }
+
+    #[test]
+    fn test_search_weak_title_does_not_beat_body() {
+        let dir = TempDir::new().unwrap();
+        fs::create_dir(dir.path().join(".zk")).unwrap();
+        // Gappy fuzzy title match for "marie".
+        fs::write(
+            dir.path().join("a.md"),
+            "# margin: TUI tool for code annotations\n\nno relevant body here.",
+        )
+        .unwrap();
+        // Contiguous "marie" in the body only.
+        fs::write(
+            dir.path().join("b.md"),
+            "# Another note\n\nthis note mentions marie in its body.",
+        )
+        .unwrap();
+
+        let nb = Notebook::load(dir.path()).unwrap();
+        let results: Vec<&Note> = nb.search("marie", None).collect();
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0].title(), "Another note");
+    }
+
+    #[test]
+    fn test_search_body_with_tag_filter() {
+        let dir = setup_notebook();
+        let nb = Notebook::load(dir.path()).unwrap();
+
+        // "body" matches note1 ("This is the body.") and note2 ("Another body
+        // here.") bodies only; no title or tag matches it.
+        assert_eq!(nb.search("body", None).count(), 2);
+
+        // Requiring tag "testing" must drop note2 (untagged) even though its
+        // body matches.
+        let results: Vec<&Note> = nb.search("body", Some("testing")).collect();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].title(), "First Note");
+    }
+
+    #[test]
+    fn test_search_tag_with_tag_filter() {
+        let dir = setup_notebook();
+        let nb = Notebook::load(dir.path()).unwrap();
+
+        // "testing" matches note1's tag only.
+        assert_eq!(nb.search("testing", None).count(), 1);
+
+        // Requiring tag "rust" still matches (note1 has both); requiring
+        // "public" drops it (no note has that tag).
+        assert_eq!(nb.search("testing", Some("rust")).count(), 1);
+        assert_eq!(nb.search("testing", Some("public")).count(), 0);
     }
 
     #[test]
@@ -505,7 +640,7 @@ mod tests {
         let dir = setup_notebook();
         let nb = Notebook::load(dir.path()).unwrap();
 
-        assert_eq!(nb.search_titles("", None).count(), 3);
+        assert_eq!(nb.search("", None).count(), 3);
     }
 
     #[test]

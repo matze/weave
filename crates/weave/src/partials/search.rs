@@ -28,7 +28,7 @@ pub(crate) async fn search(
     } else if let Some(tag) = query.strip_prefix('#') {
         notebook.search_tag(tag, tag_filter)
     } else {
-        notebook.search_titles(query, tag_filter)
+        notebook.search(query, tag_filter)
     };
 
     tracing::info!(number = notes.len(), "search results");

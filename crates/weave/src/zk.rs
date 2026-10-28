@@ -76,9 +76,9 @@ impl Notebook {
         notes
     }
 
-    /// Fuzzy search for `query` inside titles and return matching [`Note`]s.
-    pub fn search_titles(&self, query: &str, with_tag: Option<&str>) -> Vec<&Note> {
-        self.inner.search_titles(query, with_tag).collect()
+    /// Search notes by title, tag, and body, ranked by priority (title > tag > body).
+    pub fn search(&self, query: &str, with_tag: Option<&str>) -> Vec<&Note> {
+        self.inner.search(query, with_tag).collect()
     }
 
     /// Return notes that wiki-link to `stem`.

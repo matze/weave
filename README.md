@@ -5,7 +5,7 @@ Weave is a self-hosted, single-user, web-based frontend to view and edit
 opinionated. It features
 
 - a single binary with a built-in zk re-implementation (no `zk` binary needed)
-- fuzzy search across all note titles and tags
+- fuzzy search across all note titles, tags, and bodies
 - cross-linking and note editing
 - syntax highlighting of code blocks
 - real-time file watching (external edits show up immediately)

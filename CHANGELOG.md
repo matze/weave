@@ -8,6 +8,12 @@ and this project adheres to
 
 ## [Unreleased]
 
+### Added
+
+- Search note bodies in addition to titles and tags. Results are ranked by a
+  quality-weighted score: title outranks tag outranks body for equally strong
+  matches, but a strong body match outranks a weak (gappy) title match.
+
 ## [0.4.0]
 
 ### Changed
