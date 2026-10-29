@@ -8,6 +8,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+## [0.5.0]
+
 ### Added
 
 - Search note bodies in addition to titles and tags. Results are ranked by a
