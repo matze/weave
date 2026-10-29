@@ -3582,6 +3582,7 @@ dependencies = [
  "anyhow",
  "axum",
  "axum-extra",
+ "cookie",
  "futures-concurrency",
  "jiff",
  "jsonwebtoken",

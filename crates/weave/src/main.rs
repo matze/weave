@@ -104,7 +104,9 @@ async fn do_login(
     if login.password == state.password {
         tracing::info!("successful login");
         let token = issuer.new_token();
-        let cookie = Cookie::build(("jwt", token)).build();
+        let cookie = Cookie::build(("jwt", token))
+            .max_age(cookie::time::Duration::days(30))
+            .build();
         (jar.add(cookie), Redirect::to("/")).into_response()
     } else {
         tracing::warn!("failed login attempt");

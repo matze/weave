@@ -14,6 +14,11 @@ and this project adheres to
   quality-weighted score: title outranks tag outranks body for equally strong
   matches, but a strong body match outranks a weak (gappy) title match.
 
+### Changed
+
+- Expire the login cookie after 30 days, matching the JWT's existing 30-day
+  lifetime.
+
 ## [0.4.0]
 
 ### Changed
